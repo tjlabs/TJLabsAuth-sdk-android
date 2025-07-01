@@ -10,7 +10,7 @@ plugins {
 
 val versionMajor = 1
 val versionMinor = 0
-val versionPatch = 0
+val versionPatch = 1
 
 
 // local.properties 파일 읽기
@@ -90,8 +90,8 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = tjGroupId
-                artifactId = tjArtifactId
+                groupId = "com.github.tjlabs"
+                artifactId = "TJLabsAuth-sdk-android"
                 version = "$versionMajor.$versionMinor.$versionPatch"
             }
         }
