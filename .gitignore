@@ -1,0 +1,82 @@
+# ===================
+# Gradle
+# ===================
+.gradle/
+build/
+**/build/
+
+# ===================
+# Local configuration
+# ===================
+local.properties
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# ===================
+# OS files
+# ===================
+.DS_Store
+Thumbs.db
+
+# ===================
+# Kotlin specific
+# ===================
+*.kotlin_module
+
+# ===================
+# Android Studio
+# ===================
+captures/
+.externalNativeBuild/
+.cxx/
+.navigation/
+output.json
+
+# ===================
+# Log / temporary
+# ===================
+*.log
+*.tmp
+*.bak
+
+# ===================
+# Keystore (optional - only if you keep local keys here)
+# ===================
+*.jks
+*.keystore
+
+# ===================
+# Jetpack Compose previews cache
+# ===================
+.idea/caches/build_file_checksums.ser
+.idea/caches/
+.idea/gradle.xml
+
+# ===================
+# Crashlytics / Firebase
+# ===================
+crashlytics-build.properties
+fabric.properties
+
+# ===================
+# Test result artifacts
+# ===================
+*.ec
+test-results/
+outputs/
+
+# ===================
+# App-specific
+# ===================
+/app/release
+*.apk
+*.aab
+
+# ===================
+# Mac/Unix/Linux
+# ===================
+ehthumbs.db
+Icon?
+Desktop.ini
