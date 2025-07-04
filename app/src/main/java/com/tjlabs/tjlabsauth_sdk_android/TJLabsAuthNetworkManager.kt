@@ -10,7 +10,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-object TJLabsAuthNetworkManager {
+internal object TJLabsAuthNetworkManager {
     fun postAuthToken(url : String, input : AuthInput, authServerVersion: String, completion: (Int, AuthOutput) -> Unit) {
         val retrofit = TJLabsAuthNetworkConstants.genRetrofit(url)
         val postPathPixel = retrofit.create(PostInput::class.java)

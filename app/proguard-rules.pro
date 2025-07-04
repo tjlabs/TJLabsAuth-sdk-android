@@ -66,4 +66,13 @@
 # is used.
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
--keep class com.tjlabs.olympus_android_app.** { *; }
+# 기본 보호
+-dontwarn javax.annotation.**
+-dontwarn kotlin.**
+-dontnote kotlin.**
+
+# 필요한 클래스만 유지
+-keep public class com.tjlabs.** {
+    public *;
+}
+-keep class androidx.** { *; }

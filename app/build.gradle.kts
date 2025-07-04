@@ -2,7 +2,6 @@ import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 
 plugins {
-//    id("com.android.application")
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("maven-publish")
@@ -10,19 +9,7 @@ plugins {
 
 val versionMajor = 1
 val versionMinor = 0
-val versionPatch = 1
-
-
-// local.properties 파일 읽기
-val localProperties = Properties().apply {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        load(localPropertiesFile.inputStream())
-    }
-}
-
-val tjGroupId: String = localProperties.getProperty("GROUP_ID") ?: ""
-val tjArtifactId: String = localProperties.getProperty("ARTIFACT_ID") ?: ""
+val versionPatch = 2
 
 
 android {
@@ -30,13 +17,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
-//        applicationId = "com.tjlabs.tjlabsauth_sdk_android"
-//        versionCode = 1
-//        versionName = "1.0"
         minSdk = 29
         targetSdk = 34
-
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -49,12 +31,6 @@ android {
             )
         }
     }
-
-//    libraryVariants.all {
-//        outputs.all {
-//            (this as BaseVariantOutputImpl).outputFileName = "app-release-aegis.aar"
-//        }
-//    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
