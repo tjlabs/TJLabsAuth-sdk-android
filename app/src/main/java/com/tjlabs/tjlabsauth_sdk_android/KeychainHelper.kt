@@ -28,7 +28,11 @@ class KeychainHelper private constructor(context: Context) {
     }
 
     fun load(key: String): String? {
-        return sharedPreferences.getString(key, null)
+        return try {
+            sharedPreferences.getString(key, null)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     fun delete(key: String) {
