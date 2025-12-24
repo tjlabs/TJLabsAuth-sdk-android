@@ -1,6 +1,3 @@
-import com.android.build.gradle.internal.api.BaseVariantOutputImpl
-import java.util.Properties
-
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -9,7 +6,7 @@ plugins {
 
 val versionMajor = 1
 val versionMinor = 0
-val versionPatch = 3
+val versionPatch = 4
 
 
 android {
