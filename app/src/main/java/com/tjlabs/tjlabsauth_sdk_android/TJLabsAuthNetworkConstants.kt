@@ -1,6 +1,5 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
-import AuthRegion
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit

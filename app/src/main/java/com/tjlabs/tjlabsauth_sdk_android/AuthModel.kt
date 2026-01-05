@@ -1,3 +1,5 @@
+package com.tjlabs.tjlabsauth_sdk_android
+
 data class AuthRegion(
     val KOREA : String,
     val US_EAST : String,

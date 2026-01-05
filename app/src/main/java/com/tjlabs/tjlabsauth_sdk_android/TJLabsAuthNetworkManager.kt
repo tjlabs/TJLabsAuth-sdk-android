@@ -1,10 +1,5 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
-import AuthInput
-import AuthOutput
-import RefreshTokenInput
-import RefreshTokenOutput
-import VerifyTokenInput
 import android.util.Log
 import retrofit2.Call
 import retrofit2.Callback

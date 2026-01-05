@@ -1,6 +1,5 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
-import TokenResult
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
