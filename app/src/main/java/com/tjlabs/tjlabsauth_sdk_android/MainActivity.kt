@@ -15,12 +15,9 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         val bind = ActivityMainBinding.inflate(layoutInflater)
 
-
-        TJLabsAuthManager.setServerURL(serverType = "jupiter")
         bind.btnAuth.setOnClickListener {
             val name = bind.editTextText.text.toString()
             val pw = bind.editTextTextPassword.text.toString()
-
 
             TJLabsAuthManager.initialize(applicationContext)
             TJLabsAuthManager.auth(name, pw) {
