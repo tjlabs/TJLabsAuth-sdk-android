@@ -20,9 +20,8 @@ internal object TJLabsAuthNetworkConstants {
     private var REGION_PREFIX = "ap-northeast-2."
     private const val SUFFIX = ".tjlabs.dev"
     private var REGION_NAME = "Korea"
-
-    private var USER_URL = HTTP_PREFIX + REGION_PREFIX + "user"
     private var SERVER_TYPE: String = "jupiter"
+    private var USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$SERVER_TYPE$SUFFIX"
 
     fun genRetrofit(token: String?): Retrofit {
         val okHttpClientBuilder = OkHttpClient.Builder()
