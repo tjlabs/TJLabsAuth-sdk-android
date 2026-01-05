@@ -22,7 +22,6 @@
 
 # Retrofit does reflection on generic parameters. InnerClasses is required to use Signature and
 # EnclosingMethod is required to use InnerClasses.
--dontobfuscate
 -keepattributes Signature, InnerClasses, EnclosingMethod
 
 # Retrofit does reflection on method and parameter annotations.
@@ -75,4 +74,3 @@
 -keep public class com.tjlabs.** {
     public *;
 }
--keep class androidx.** { *; }
