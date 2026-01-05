@@ -30,10 +30,16 @@ object TJLabsAuthManager {
 
     fun initialize(context: Context) {
         keychain = KeychainHelper.getInstance(context)
-        accessToken = keychain.load("TJLabs.accessToken") ?: ""
-        refreshToken = keychain.load("TJLabs.refreshToken") ?: ""
-        storedUsername = keychain.load("TJLabs.username") ?: ""
-        storedPassword = keychain.load("TJLabs.password") ?: ""
+        //accessToken = keychain.load("TJLabs.accessToken") ?: ""
+        //refreshToken = keychain.load("TJLabs.refreshToken") ?: ""
+        //storedUsername = keychain.load("TJLabs.username") ?: ""
+        //storedPassword = keychain.load("TJLabs.password") ?: ""
+
+        Log.d("CheckToken", "initialize")
+        Log.d("CheckToken", "accessToken : $accessToken")
+        Log.d("CheckToken", "refreshToken : $refreshToken")
+        Log.d("CheckToken", "storedUsername : $storedUsername")
+        Log.d("CheckToken", "storedPassword : $storedPassword")
     }
 
     fun setServerURL(region: String = AuthRegion.KOREA, serverType: String = "jupiter")
