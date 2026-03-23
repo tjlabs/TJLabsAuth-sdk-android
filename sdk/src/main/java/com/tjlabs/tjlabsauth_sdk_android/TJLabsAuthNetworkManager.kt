@@ -1,10 +1,5 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
-import AuthInput
-import AuthOutput
-import RefreshTokenInput
-import RefreshTokenOutput
-import VerifyTokenInput
 import android.util.Log
 import retrofit2.Call
 import retrofit2.Callback
@@ -21,7 +16,7 @@ internal object TJLabsAuthNetworkManager {
             }
             override fun onResponse(call: Call<AuthOutput>, response: Response<AuthOutput>) {
                 val statusCode = response.code()
-                Log.d("CheckToken", "request : ${call.request()}")
+                Log.d("CheckToken", "auth status code : $statusCode // request : ${call.request()} // response : ${response.body()}")
                 if (statusCode in 200 until 300) {
                     val resultData = response.body()?: AuthOutput()
                     completion(statusCode, resultData)
@@ -42,7 +37,7 @@ internal object TJLabsAuthNetworkManager {
             }
             override fun onResponse(call: Call<RefreshTokenOutput>, response: Response<RefreshTokenOutput>) {
                 val statusCode = response.code()
-                Log.d("CheckToken", "request(refresh) : ${call.request()}")
+                Log.d("CheckToken", "refresh status code : $statusCode // request : ${call.request()} // response : ${response.body()}")
 
                 if (statusCode in 200 until 300) {
                     val resultData = response.body()?: RefreshTokenOutput()
@@ -65,7 +60,7 @@ internal object TJLabsAuthNetworkManager {
             }
             override fun onResponse(call: Call<Any>, response: Response<Any>) {
                 val statusCode = response.code()
-                Log.d("CheckToken", "request(refresh) : ${call.request()}")
+                Log.d("CheckToken", "verify status code : $statusCode // request : ${call.request()} // response : ${response.body()}")
                 completion(statusCode)
             }
         })

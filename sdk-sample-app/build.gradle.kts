@@ -1,34 +1,34 @@
 plugins {
-    id("com.android.library")
-    id("org.jetbrains.kotlin.android")
-    id("maven-publish")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
-val versionMajor = 1
-val versionMinor = 0
-val versionPatch = 4
-
-
 android {
-    namespace = "com.tjlabs.tjlabsauth_sdk_android"
+    namespace = "com.tjlabs.sdk_sample_app"
     compileSdk = 35
 
     defaultConfig {
+        applicationId = "com.tjlabs.sdk_sample_app"
         minSdk = 29
         targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
     }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -36,16 +36,18 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-
     buildFeatures {
         buildConfig = true
         viewBinding = true
     }
+
 }
 
 dependencies {
-    implementation ("androidx.security:security-crypto-ktx:1.1.0-alpha03")
-    implementation(libs.retrofit)
+    implementation(project(":sdk"))
+    implementation(libs.appcompat)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.converter.gson)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -53,20 +55,4 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.security.crypto.ktx)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("release") {
-                from(components["release"])
-                groupId = "com.github.tjlabs"
-                artifactId = "TJLabsAuth-sdk-android"
-                version = "$versionMajor.$versionMinor.$versionPatch"
-            }
-        }
-    }
 }

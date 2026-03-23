@@ -1,13 +1,12 @@
-package com.tjlabs.tjlabsauth_sdk_android
+package com.tjlabs.sdk_sample_app
 
-import TokenResult
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import com.tjlabs.tjlabsauth_sdk_android.databinding.ActivityMainBinding
+import com.tjlabs.sdk_sample_app.databinding.ActivityMainBinding
+import com.tjlabs.tjlabsauth_sdk_android.TJLabsAuthManager
+import com.tjlabs.tjlabsauth_sdk_android.TokenResult
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,12 +14,9 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         val bind = ActivityMainBinding.inflate(layoutInflater)
 
-
-        TJLabsAuthManager.setServerURL(serverType = "jupiter")
         bind.btnAuth.setOnClickListener {
             val name = bind.editTextText.text.toString()
             val pw = bind.editTextTextPassword.text.toString()
-
 
             TJLabsAuthManager.initialize(applicationContext)
             TJLabsAuthManager.auth(name, pw) {
@@ -65,6 +61,7 @@ class MainActivity : AppCompatActivity() {
 
 
         }
+
         setContentView(bind.root)
 
     }

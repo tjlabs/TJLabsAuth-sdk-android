@@ -1,6 +1,5 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
-import AuthRegion
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -11,18 +10,16 @@ import java.util.concurrent.TimeUnit
 const val TIMEOUT_VALUE_PUT = 5L
 
 internal object TJLabsAuthNetworkConstants {
-    private const val USER_JUPITER_TOKEN_SERVER_VERSION = "2025-03-25"
+    private const val USER_JUPITER_TOKEN_SERVER_VERSION = "2025-12-16"
     private const val USER_PHOENIX_TOKEN_SERVER_VERSION = "2025-06-11"
     private const val USER_GUARDIANS_TOKEN_SERVER_VERSION = "2025-06-30"
-
 
     private const val HTTP_PREFIX = "https://"
     private var REGION_PREFIX = "ap-northeast-2."
     private const val SUFFIX = ".tjlabs.dev"
     private var REGION_NAME = "Korea"
-
-    private var USER_URL = HTTP_PREFIX + REGION_PREFIX + "user"
     private var SERVER_TYPE: String = "jupiter"
+    private var USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$SERVER_TYPE$SUFFIX"
 
     fun genRetrofit(token: String?): Retrofit {
         val okHttpClientBuilder = OkHttpClient.Builder()

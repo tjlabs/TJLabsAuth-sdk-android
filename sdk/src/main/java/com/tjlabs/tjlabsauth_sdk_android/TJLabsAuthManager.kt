@@ -1,11 +1,5 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
-import AuthInput
-import AuthOutput
-import AuthRegion
-import RefreshTokenInput
-import TokenResult
-import VerifyTokenInput
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -30,10 +24,16 @@ object TJLabsAuthManager {
 
     fun initialize(context: Context) {
         keychain = KeychainHelper.getInstance(context)
-        accessToken = keychain.load("TJLabs.accessToken") ?: ""
-        refreshToken = keychain.load("TJLabs.refreshToken") ?: ""
-        storedUsername = keychain.load("TJLabs.username") ?: ""
-        storedPassword = keychain.load("TJLabs.password") ?: ""
+        //accessToken = keychain.load("TJLabs.accessToken") ?: ""
+        //refreshToken = keychain.load("TJLabs.refreshToken") ?: ""
+        //storedUsername = keychain.load("TJLabs.username") ?: ""
+        //storedPassword = keychain.load("TJLabs.password") ?: ""
+
+        Log.d("CheckToken", "initialize")
+        Log.d("CheckToken", "accessToken : $accessToken")
+        Log.d("CheckToken", "refreshToken : $refreshToken")
+        Log.d("CheckToken", "storedUsername : $storedUsername")
+        Log.d("CheckToken", "storedPassword : $storedPassword")
     }
 
     fun setServerURL(region: String = AuthRegion.KOREA, serverType: String = "jupiter")
@@ -161,7 +161,7 @@ object TJLabsAuthManager {
         TJLabsAuthNetworkManager.postVerifyToken(url, authInput, TJLabsAuthNetworkConstants.getUserTokenVersion()) {
                 code ->
             isRefreshing = false
-            if (code == 200) {
+            if (code in 200 until 300) {
                 completion(true)
             }else {
                 completion(false)

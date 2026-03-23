@@ -1,10 +1,5 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
-import AuthInput
-import AuthOutput
-import RefreshTokenInput
-import RefreshTokenOutput
-import VerifyTokenInput
 import retrofit2.Call
 import retrofit2.http.*
 
@@ -13,7 +8,7 @@ internal interface PostInput {
         "accept: application/json",
         "content-type: application/json"
     )
-    @POST("/{token_server_version}/token")
+    @POST("/{token_server_version}/tenants/token")
     fun postAuth(@Body param: AuthInput, @Path("token_server_version") authServerVersion : String) : Call<AuthOutput>
 
     @POST("/{token_server_version}/token/refresh")

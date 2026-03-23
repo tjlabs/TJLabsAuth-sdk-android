@@ -1,0 +1,1 @@
+#-keep class com.tjlabs.tjlabsauth_sdk_android.** { *; }
