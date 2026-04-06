@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 const val TIMEOUT_VALUE_PUT = 5L
 
 internal object TJLabsAuthNetworkConstants {
-    private const val USER_JUPITER_TOKEN_SERVER_VERSION = "2025-12-16"
+    private const val USER_JUPITER_TOKEN_SERVER_VERSION = "2026-04-02"
     private const val USER_PHOENIX_TOKEN_SERVER_VERSION = "2025-06-11"
     private const val USER_GUARDIANS_TOKEN_SERVER_VERSION = "2025-06-30"
 

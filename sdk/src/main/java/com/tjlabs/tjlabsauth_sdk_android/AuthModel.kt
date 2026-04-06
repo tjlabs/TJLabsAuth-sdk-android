@@ -14,25 +14,14 @@ data class AuthRegion(
 
 
 data class AuthInput(
-    val name: String,
-    val password: String
+    val client_secret: String,
+    val access_key: String,
+    val secret_access_key : String
 )
 
 data class AuthOutput(
-    val refresh: String = "",
-    val access: String = ""
-)
-
-data class RefreshTokenInput(
-    val refresh: String
-)
-
-data class RefreshTokenOutput(
-    val access: String = ""
-)
-
-data class VerifyTokenInput(
-    val token: String
+    val access: String = "",
+    val expires_in: Int = 0
 )
 
 sealed class TokenResult {
