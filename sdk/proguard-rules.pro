@@ -1,75 +1,36 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
-
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-
-# Retrofit does reflection on generic parameters. InnerClasses is required to use Signature and
-# EnclosingMethod is required to use InnerClasses.
+# Keep metadata used by Retrofit reflection.
 -keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations, AnnotationDefault
 
-# Retrofit does reflection on method and parameter annotations.
--keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+# Keep public SDK entry points for binary/source compatibility.
+-keep class com.tjlabs.tjlabsauth_sdk_android.TJLabsAuthManager { *; }
+-keep class com.tjlabs.tjlabsauth_sdk_android.AuthRegion { *; }
+-keep class com.tjlabs.tjlabsauth_sdk_android.TokenResult { *; }
+-keep class com.tjlabs.tjlabsauth_sdk_android.TokenResult$* { *; }
 
-# Keep annotation default values (e.g., retrofit2.http.Field.encoded).
--keepattributes AnnotationDefault
+# Gson in this SDK relies on field names (no @SerializedName), so keep DTO fields.
+-keep class com.tjlabs.tjlabsauth_sdk_android.AuthInput { <fields>; <init>(...); }
+-keep class com.tjlabs.tjlabsauth_sdk_android.AuthOutput { <fields>; <init>(...); }
+-keep class com.tjlabs.tjlabsauth_sdk_android.RefreshTokenInput { <fields>; <init>(...); }
+-keep class com.tjlabs.tjlabsauth_sdk_android.RefreshTokenOutput { <fields>; <init>(...); }
+-keep class com.tjlabs.tjlabsauth_sdk_android.VerifyTokenInput { <fields>; <init>(...); }
 
-# Retain service method parameters when optimizing.
+# Keep Retrofit interface methods and annotations.
+-keep interface com.tjlabs.tjlabsauth_sdk_android.PostInput { *; }
 -keepclassmembers,allowshrinking,allowobfuscation interface * {
     @retrofit2.http.* <methods>;
 }
-
-# Ignore annotation used for build tooling.
--dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
-
-# Ignore JSR 305 annotations for embedding nullability information.
--dontwarn javax.annotation.**
-
-# Guarded by a NoClassDefFoundError try/catch and only used when on the classpath.
--dontwarn kotlin.Unit
-
-# Top-level functions that can only be used by Kotlin.
--dontwarn retrofit2.**
-
-# With R8 full mode, it sees no subtypes of Retrofit interfaces since they are created with a Proxy
-# and replaces all potential values with null. Explicitly keeping the interfaces prevents this.
 -if interface * { @retrofit2.http.* <methods>; }
 -keep,allowobfuscation interface <1>
-
-# Keep inherited services.
 -if interface * { @retrofit2.http.* <methods>; }
 -keep,allowobfuscation interface * extends <1>
 
-# Keep generic signature of Call, Response (R8 full mode strips signatures from non-kept items).
+# R8 full mode: keep generic signatures used by Retrofit adapters.
 -keep,allowobfuscation,allowshrinking interface retrofit2.Call
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
-
-# With R8 full mode generic signatures are stripped for classes that are not
-# kept. Suspend functions are wrapped in continuations where the type argument
-# is used.
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
-# 기본 보호
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 -dontwarn javax.annotation.**
--dontwarn kotlin.**
--dontnote kotlin.**
-
-# 필요한 클래스만 유지
--repackageclasses com.tjlabs.tjlabsauth.obf
--keep class com.tjlabs.tjlabsauth_sdk_android.** { *; }
+-dontwarn kotlin.Unit
+-dontwarn retrofit2.**

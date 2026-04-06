@@ -8,7 +8,7 @@ plugins {
 
 val versionMajor = 1
 val versionMinor = 0
-val versionPatch = 9
+val versionPatch = 10
 
 
 android {
@@ -48,7 +48,7 @@ android {
 }
 
 dependencies {
-    implementation ("androidx.security:security-crypto-ktx:1.1.0-alpha03")
+    api ("androidx.security:security-crypto-ktx:1.1.0-alpha03")
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
 }

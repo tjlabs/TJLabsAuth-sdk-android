@@ -1,197 +1,202 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import org.json.JSONObject
 import java.time.Instant
 import java.util.Base64
 
 object TJLabsAuthManager {
+    private const val KEY_ACCESS_TOKEN = "TJLabs.accessToken"
+    private const val KEY_ACCESS_TOKEN_EXP = "TJLabs.accessTokenExp"
+    private const val KEY_ACCESS_KEY = "TJLabs.accessKey"
+    private const val KEY_SECRET_ACCESS_KEY = "TJLabs.secretAccessKey"
+    private const val KEY_CLIENT_SECRET = "TJLabs.clientSecret"
+
     private var accessToken: String = ""
-    private var refreshToken: String = ""
-
     private var accessTokenExpDate: Instant = Instant.EPOCH
-    private var refreshTokenExpDate: Instant = Instant.EPOCH
 
-    private var storedUsername: String = ""
-    private var storedPassword: String = ""
+    private var storedAccessKey: String = ""
+    private var storedSecretAccessKey: String = ""
+    private var clientSecret: String = ""
 
-    private var isRefreshing = false
+    private lateinit var keychain: KeychainHelper
+    private var appContext: Context? = null
 
-    private  lateinit var keychain : KeychainHelper
-
-    fun initialize(context: Context) {
+    private fun initialize(context: Context) {
+        appContext = context.applicationContext
         keychain = KeychainHelper.getInstance(context)
-        //accessToken = keychain.load("TJLabs.accessToken") ?: ""
-        //refreshToken = keychain.load("TJLabs.refreshToken") ?: ""
-        //storedUsername = keychain.load("TJLabs.username") ?: ""
-        //storedPassword = keychain.load("TJLabs.password") ?: ""
+
+        accessToken = keychain.load(KEY_ACCESS_TOKEN) ?: ""
+        accessTokenExpDate = loadSavedAccessTokenExp() ?: extractExpirationDate(accessToken) ?: Instant.EPOCH
+
+        storedAccessKey = keychain.load(KEY_ACCESS_KEY) ?: ""
+        storedSecretAccessKey = keychain.load(KEY_SECRET_ACCESS_KEY) ?: ""
+        clientSecret = keychain.load(KEY_CLIENT_SECRET) ?: clientSecret
 
         Log.d("CheckToken", "initialize")
-        Log.d("CheckToken", "accessToken : $accessToken")
-        Log.d("CheckToken", "refreshToken : $refreshToken")
-        Log.d("CheckToken", "storedUsername : $storedUsername")
-        Log.d("CheckToken", "storedPassword : $storedPassword")
+        Log.d("CheckToken", "accessToken exp : $accessTokenExpDate")
     }
 
-    fun setServerURL(region: String = AuthRegion.KOREA, serverType: String = "jupiter")
-    {
+    private fun initialize(context: Context, clientSecret: String) {
+        initialize(context)
+        setClientSecret(clientSecret, persist = true)
+    }
+
+    internal fun setServerURL(region: String = AuthRegion.KOREA, serverType: String = "jupiter") {
         TJLabsAuthNetworkConstants.setServerURL(region, serverType)
+    }
+
+    fun setClientSecret(context: Context, secret: String, persist: Boolean = true) {
+        if (!::keychain.isInitialized) {
+            initialize(context)
+        }
+        setClientSecret(secret, persist)
+    }
+
+    private fun setClientSecret(secret: String, persist: Boolean = true) {
+        clientSecret = secret
+        if (persist && ::keychain.isInitialized) {
+            keychain.save(KEY_CLIENT_SECRET, secret)
+        }
     }
 
     private fun setTokenInfo(authOutput: AuthOutput) {
         accessToken = authOutput.access
-        refreshToken = authOutput.refresh
+        accessTokenExpDate = resolveAccessTokenExpiration(authOutput)
 
-        keychain.apply {
-            save("TJLabs.accessToken", accessToken)
-            save("TJLabs.refreshToken", refreshToken)
-        }
-
-        extractExpirationDate(authOutput.access)?.let {
-            accessTokenExpDate = it
-        }
-
-        extractExpirationDate(authOutput.refresh)?.let {
-            refreshTokenExpDate = it
+        if (::keychain.isInitialized) {
+            keychain.save(KEY_ACCESS_TOKEN, accessToken)
+            keychain.save(KEY_ACCESS_TOKEN_EXP, accessTokenExpDate.epochSecond.toString())
         }
     }
 
     fun getAccessToken(update: Boolean = true, completion: (TokenResult) -> Unit) {
-        Log.d("CheckToken", "access token exp : ${extractExpirationDate(accessToken)} // tenant_id : ${extractTenantId(accessToken)}")
-
         if (!update) {
-            completion(TokenResult.Success(accessToken))
-            return
-        }
-
-        if (isTokenNearExpiry(refreshToken, threshold = 60)) {
-            Log.d("CheckToken", "refreshToken expiry")
-            reAuthenticateIfPossible(completion)
-            return
-        }
-
-        if (isTokenNearExpiry(accessToken, threshold = 60)) {
-            Log.d("CheckToken", "accessToken expiry")
-
-            refresh { status, success ->
-                if (success) {
-                    Log.d("CheckToken", "refresh success")
-                    completion(TokenResult.Success(accessToken))
-                } else {
-                    Log.d("CheckToken", "refresh fail")
-                    completion(
-                        TokenResult.Failure(
-                            TokenResult.FailureReason.REFRESH_FAILED,
-                            statusCode = status,
-                            message = "Failed to refresh token"
-                        )
+            if (isAccessTokenValid(thresholdSeconds = 0)) {
+                completion(TokenResult.Success(accessToken))
+            } else {
+                completion(
+                    TokenResult.Failure(
+                        TokenResult.FailureReason.AUTH_FAILED,
+                        statusCode = null,
+                        message = "Access token is missing or expired"
                     )
-                }
+                )
             }
-        } else {
-            Log.d("CheckToken", "accessToken get")
+            return
+        }
+
+        if (isAccessTokenValid(thresholdSeconds = 60)) {
             completion(TokenResult.Success(accessToken))
+            return
+        }
+
+        // access token 만료/임박 시 auth 재호출
+        reAuthenticateIfPossible(completion)
+    }
+
+    // 하위 호환용 API: refresh endpoint가 없는 현재 구조에서는 재인증으로 동작
+    private fun refresh(completion: (Int, Boolean) -> Unit) {
+        reAuthenticateIfPossible { result ->
+            when (result) {
+                is TokenResult.Success -> completion(200, true)
+                is TokenResult.Failure -> completion(result.statusCode ?: 401, false)
+            }
         }
     }
 
-    fun getRefreshToken() : String {
-        return refreshToken
+    // 하위 호환용 API: 서버 verify endpoint 없이 로컬 만료검사로 판단
+    private fun verify(completion: (Boolean) -> Unit) {
+        completion(isAccessTokenValid(thresholdSeconds = 0))
     }
 
-    fun auth(name : String, password : String, completion : (Int, Boolean) -> Unit) {
-        storedUsername = name
-        storedPassword = password
+    // 하위 호환용 API
+    private fun getRefreshToken(): String {
+        return ""
+    }
 
-        keychain.apply {
-            save("TJLabs.username", name)
-            save("TJLabs.password", password)
+    fun auth(accessKey: String, secretAccessKey: String, completion: (Int, Boolean) -> Unit) {
+        if (!::keychain.isInitialized) {
+            appContext?.let { initialize(it) }
+        }
+
+        storedAccessKey = accessKey
+        storedSecretAccessKey = secretAccessKey
+
+        if (::keychain.isInitialized) {
+            keychain.save(KEY_ACCESS_KEY, accessKey)
+            keychain.save(KEY_SECRET_ACCESS_KEY, secretAccessKey)
+        }
+
+        if (clientSecret.isBlank() && ::keychain.isInitialized) {
+            clientSecret = keychain.load(KEY_CLIENT_SECRET) ?: ""
+        }
+
+        if (clientSecret.isBlank()) {
+            completion(400, false)
+            return
         }
 
         val url = TJLabsAuthNetworkConstants.getUserBaseURL()
-        val authInput = AuthInput(name, password)
-        var isSuccess = false
-        TJLabsAuthNetworkManager.postAuthToken(url, authInput, TJLabsAuthNetworkConstants.getUserTokenVersion()) {
-            code, output ->
-            if (code == 200) {
+        val authInput = AuthInput(
+            client_secret = clientSecret,
+            access_key = accessKey,
+            secret_access_key = secretAccessKey
+        )
+
+        TJLabsAuthNetworkManager.postAuthToken(url, authInput, TJLabsAuthNetworkConstants.getUserTokenVersion()) { code, output ->
+            val success = (code in 200 until 300) && output.access.isNotBlank()
+            if (success) {
                 setTokenInfo(output)
-                isSuccess = true
             }
-
-            completion(code, isSuccess)
+            completion(code, success)
         }
     }
 
-    fun refresh(completion : (Int, Boolean) -> Unit) {
-        synchronized(this) {
-            if (isRefreshing) {
-                Handler(Looper.getMainLooper()).post {
-                    completion(409, false)
-                }
-                return
+    private fun isAccessTokenValid(thresholdSeconds: Long): Boolean {
+        if (accessToken.isBlank()) return false
+        val nowWithThreshold = Instant.now().plusSeconds(thresholdSeconds)
+        return nowWithThreshold.isBefore(accessTokenExpDate)
+    }
+
+    private fun reAuthenticateIfPossible(completion: (TokenResult) -> Unit) {
+        if (::keychain.isInitialized) {
+            if (storedAccessKey.isBlank()) {
+                storedAccessKey = keychain.load(KEY_ACCESS_KEY) ?: ""
             }
-            isRefreshing = true
-            val url = TJLabsAuthNetworkConstants.getUserBaseURL()
-            val authInput = RefreshTokenInput(refreshToken)
-
-            var isSuccess = false
-            TJLabsAuthNetworkManager.postRefreshToken(url, authInput, TJLabsAuthNetworkConstants.getUserTokenVersion()) {
-                    code, output ->
-                isRefreshing = false
-                if (code == 200) {
-                    accessToken = output.access
-                    keychain.save("TJLabs.accessToken", accessToken)
-                    val expDate = extractExpirationDate(accessToken)
-                    if (expDate != null) {
-                        accessTokenExpDate = expDate
-                    }
-                    isSuccess = true
-                }
-
-                completion(code, isSuccess)
+            if (storedSecretAccessKey.isBlank()) {
+                storedSecretAccessKey = keychain.load(KEY_SECRET_ACCESS_KEY) ?: ""
+            }
+            if (clientSecret.isBlank()) {
+                clientSecret = keychain.load(KEY_CLIENT_SECRET) ?: ""
             }
         }
-    }
 
-    fun verify(completion : (Boolean) -> Unit) {
-        val url = TJLabsAuthNetworkConstants.getUserBaseURL()
-        val authInput = VerifyTokenInput(accessToken)
-        TJLabsAuthNetworkManager.postVerifyToken(url, authInput, TJLabsAuthNetworkConstants.getUserTokenVersion()) {
-                code ->
-            isRefreshing = false
-            if (code in 200 until 300) {
-                completion(true)
-            }else {
-                completion(false)
-            }
-        }
-    }
-
-
-
-    private fun isTokenNearExpiry(token: String, threshold: Long = 60): Boolean {
-        val exp = extractExpirationDate(token) ?: return true
-        return Instant.now().plusSeconds(threshold) >= exp
-    }
-
-    private fun reAuthenticateIfPossible(
-        completion: (TokenResult) -> Unit
-    ) {
-        if (storedUsername.isEmpty() || storedPassword.isEmpty()) {
+        if (storedAccessKey.isBlank() || storedSecretAccessKey.isBlank()) {
             completion(
                 TokenResult.Failure(
                     TokenResult.FailureReason.CREDENTIALS_MISSING,
                     statusCode = null,
-                    message = "Username/password not stored"
+                    message = "access_key/secret_access_key not stored"
                 )
             )
             return
         }
 
-        auth(storedUsername, storedPassword) { status, success ->
-            if (success) {
+        if (clientSecret.isBlank()) {
+            completion(
+                TokenResult.Failure(
+                    TokenResult.FailureReason.CREDENTIALS_MISSING,
+                    statusCode = null,
+                    message = "client secret not configured"
+                )
+            )
+            return
+        }
+
+        auth(storedAccessKey, storedSecretAccessKey) { status, success ->
+            if (success && isAccessTokenValid(thresholdSeconds = 0)) {
                 completion(TokenResult.Success(accessToken))
             } else {
                 completion(
@@ -205,12 +210,24 @@ object TJLabsAuthManager {
         }
     }
 
-    fun extractExpirationDate(token: String): Instant? {
+    private fun resolveAccessTokenExpiration(authOutput: AuthOutput): Instant {
+        if (authOutput.expires_in > 0) {
+            return Instant.now().plusSeconds(authOutput.expires_in.toLong())
+        }
+        return extractExpirationDate(authOutput.access) ?: Instant.EPOCH
+    }
+
+    private fun loadSavedAccessTokenExp(): Instant? {
+        if (!::keychain.isInitialized) return null
+        val expEpoch = keychain.load(KEY_ACCESS_TOKEN_EXP)?.toLongOrNull() ?: return null
+        return Instant.ofEpochSecond(expEpoch)
+    }
+
+    private fun extractExpirationDate(token: String): Instant? {
         val parts = token.split(".")
         if (parts.size < 2) return null
 
         return try {
-            // Base64 URL 디코딩 (padding 보정)
             val base64 = parts[1]
                 .replace("-", "+")
                 .replace("_", "/")
@@ -223,12 +240,12 @@ object TJLabsAuthManager {
             val json = JSONObject(String(decodedBytes))
             val exp = json.getLong("exp")
             Instant.ofEpochSecond(exp)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
 
-    fun extractTenantId(token: String): String? {
+    private fun extractTenantId(token: String): String? {
         val parts = token.split(".")
         if (parts.size < 2) return null
 
@@ -244,7 +261,7 @@ object TJLabsAuthManager {
             val decodedBytes = Base64.getDecoder().decode(base64)
             val json = JSONObject(String(decodedBytes))
             json.getString("tenant_id")
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

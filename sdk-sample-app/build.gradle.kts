@@ -1,7 +1,27 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+fun String.escapeForBuildConfig(): String = this
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+
+val authClientSecret: String = providers.gradleProperty("AUTH_CLIENT_SECRET").orNull
+    ?: localProperties.getProperty("AUTH_CLIENT_SECRET", "")
+val authAccessKey: String = providers.gradleProperty("AUTH_ACCESS_KEY").orNull
+    ?: localProperties.getProperty("AUTH_ACCESS_KEY", "")
+val authSecretAccessKey: String = providers.gradleProperty("AUTH_SECRET_ACCESS_KEY").orNull
+    ?: localProperties.getProperty("AUTH_SECRET_ACCESS_KEY", "")
 
 android {
     namespace = "com.tjlabs.sdk_sample_app"
@@ -18,6 +38,21 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField(
+            "String",
+            "AUTH_CLIENT_SECRET",
+            "\"${authClientSecret.escapeForBuildConfig()}\""
+        )
+        buildConfigField(
+            "String",
+            "AUTH_ACCESS_KEY",
+            "\"${authAccessKey.escapeForBuildConfig()}\""
+        )
+        buildConfigField(
+            "String",
+            "AUTH_SECRET_ACCESS_KEY",
+            "\"${authSecretAccessKey.escapeForBuildConfig()}\""
+        )
     }
 
     buildTypes {
@@ -45,14 +80,11 @@ android {
 
 dependencies {
     implementation(project(":sdk"))
-    implementation(libs.appcompat)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation(libs.converter.gson)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.security.crypto.ktx)
 }
