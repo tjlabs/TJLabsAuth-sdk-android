@@ -1,6 +1,7 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import org.json.JSONObject
 import java.time.Instant
@@ -19,6 +20,7 @@ object TJLabsAuthManager {
     private var storedAccessKey: String = ""
     private var storedSecretAccessKey: String = ""
     private var clientSecret: String = ""
+    private var customSdkInfos: List<Sdk> = emptyList()
 
     private lateinit var keychain: KeychainHelper
     private var appContext: Context? = null
@@ -52,6 +54,11 @@ object TJLabsAuthManager {
             initialize(context)
         }
         setClientSecret(secret, persist)
+    }
+
+    // 회사 SDK 정보는 앱에서 수동으로 등록 (예: TJLabsNavi, TJLabsJupiter 등)
+    fun setSdkInfos(sdks: List<Sdk>) {
+        customSdkInfos = sdks
     }
 
     private fun setClientSecret(secret: String, persist: Boolean = true) {
@@ -139,10 +146,12 @@ object TJLabsAuthManager {
         }
 
         val url = TJLabsAuthNetworkConstants.getUserBaseURL()
+        val clientMeta = buildClientMeta()
         val authInput = AuthInput(
             client_secret = clientSecret,
             access_key = accessKey,
-            secret_access_key = secretAccessKey
+            secret_access_key = secretAccessKey,
+            client_meta = clientMeta
         )
 
         TJLabsAuthNetworkManager.postAuthToken(url, authInput, TJLabsAuthNetworkConstants.getUserTokenVersion()) { code, output ->
@@ -221,6 +230,46 @@ object TJLabsAuthManager {
         if (!::keychain.isInitialized) return null
         val expEpoch = keychain.load(KEY_ACCESS_TOKEN_EXP)?.toLongOrNull() ?: return null
         return Instant.ofEpochSecond(expEpoch)
+    }
+
+    private fun buildClientMeta(): AuthClientMeta {
+        val context = appContext
+        val appPackage = context?.packageName ?: "unknown"
+        val appVersion = context?.let {
+            runCatching {
+                val packageInfo = it.packageManager.getPackageInfo(it.packageName, 0)
+                packageInfo.versionName ?: run {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        packageInfo.longVersionCode.toString()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageInfo.versionCode.toString()
+                    }
+                }
+            }.getOrDefault("unknown")
+        } ?: "unknown"
+
+        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
+        val model = Build.MODEL?.trim().orEmpty()
+        val deviceModel = listOf(manufacturer, model)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .ifBlank { "unknown" }
+
+        val osVersion = "Android ${Build.VERSION.RELEASE ?: "unknown"} (API ${Build.VERSION.SDK_INT})"
+        val sdkInfos = if (customSdkInfos.isNotEmpty()) {
+            customSdkInfos
+        } else {
+            listOf(Sdk(name = "TJLabsAuth-sdk-android", version = "unknown"))
+        }
+
+        return AuthClientMeta(
+            app_version = appVersion,
+            app_package = appPackage,
+            device_model = deviceModel,
+            os_version = osVersion,
+            sdks = sdkInfos
+        )
     }
 
     private fun extractExpirationDate(token: String): Instant? {

@@ -11,6 +11,4 @@ internal interface PostInput {
 
     @POST("/{token_server_version}/tenants/access-keys/token")
     fun postAuth(@Body param: AuthInput, @Path("token_server_version") authServerVersion : String) : Call<AuthOutput>
-
-
 }

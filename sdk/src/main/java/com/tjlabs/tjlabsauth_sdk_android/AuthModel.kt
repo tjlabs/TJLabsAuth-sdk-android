@@ -16,7 +16,21 @@ data class AuthRegion(
 data class AuthInput(
     val client_secret: String,
     val access_key: String,
-    val secret_access_key : String
+    val secret_access_key : String,
+    val client_meta : AuthClientMeta
+)
+
+data class AuthClientMeta(
+    val app_version : String,
+    val app_package : String,
+    val device_model : String,
+    val os_version : String,
+    val sdks : List<Sdk>
+)
+
+data class Sdk(
+    val name : String,
+    val version : String
 )
 
 data class AuthOutput(
