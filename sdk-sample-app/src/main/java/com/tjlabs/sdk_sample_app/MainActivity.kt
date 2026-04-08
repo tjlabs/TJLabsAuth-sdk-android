@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.tjlabs.sdk_sample_app.databinding.ActivityMainBinding
+import com.tjlabs.tjlabsauth_sdk_android.Sdk
 import com.tjlabs.tjlabsauth_sdk_android.TJLabsAuthManager
 
 class MainActivity : AppCompatActivity() {
@@ -27,6 +28,12 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             TJLabsAuthManager.setClientSecret(applicationContext, clientSecret)
+            TJLabsAuthManager.setSdkInfos(
+                listOf(
+                    Sdk(name = "TJLabsNavi-sdk-android", version = "1.0.0"),
+                    Sdk(name = "TJLabsJupiter-sdk-android", version = "1.0.0")
+                )
+            )
             TJLabsAuthManager.auth(accessKey, secretAccessKey) {
                     code, result ->
                 Log.d("CheckToken", "auth // code : $code // result : $result")
