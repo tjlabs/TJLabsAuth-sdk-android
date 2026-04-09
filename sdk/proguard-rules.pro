@@ -3,6 +3,7 @@
 -keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations, AnnotationDefault
 
 # Keep public SDK entry points for binary/source compatibility.
+-repackageclasses com.tjlabs.tjlabsauth.obf
 -keep class com.tjlabs.tjlabsauth_sdk_android.TJLabsAuthManager { *; }
 -keep class com.tjlabs.tjlabsauth_sdk_android.AuthRegion { *; }
 -keep class com.tjlabs.tjlabsauth_sdk_android.TokenResult { *; }
