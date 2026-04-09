@@ -12,7 +12,7 @@ Android 앱에서 TJLabs Auth 서버로 인증 토큰을 발급받기 위한 SDK
 
 ```kotlin
 dependencies {
-    implementation("com.tjlabs:TJLabsAuth-sdk-android:<version>")
+    implementation("com.github.tjlabs:TJLabsAuth-sdk-android:<version>")
 }
 ```
 
