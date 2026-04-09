@@ -11,9 +11,8 @@
 # Gson in this SDK relies on field names (no @SerializedName), so keep DTO fields.
 -keep class com.tjlabs.tjlabsauth_sdk_android.AuthInput { <fields>; <init>(...); }
 -keep class com.tjlabs.tjlabsauth_sdk_android.AuthOutput { <fields>; <init>(...); }
--keep class com.tjlabs.tjlabsauth_sdk_android.RefreshTokenInput { <fields>; <init>(...); }
--keep class com.tjlabs.tjlabsauth_sdk_android.RefreshTokenOutput { <fields>; <init>(...); }
--keep class com.tjlabs.tjlabsauth_sdk_android.VerifyTokenInput { <fields>; <init>(...); }
+-keep class com.tjlabs.tjlabsauth_sdk_android.AuthClientMeta { <fields>; <init>(...); }
+-keep class com.tjlabs.tjlabsauth_sdk_android.Sdk { <fields>; <init>(...); }
 
 # Keep Retrofit interface methods and annotations.
 -keep interface com.tjlabs.tjlabsauth_sdk_android.PostInput { *; }

@@ -16,7 +16,7 @@ internal object TJLabsAuthNetworkManager {
             }
             override fun onResponse(call: Call<AuthOutput>, response: Response<AuthOutput>) {
                 val statusCode = response.code()
-                Log.d("CheckToken", "auth status code : $statusCode // request : ${call.request()} // response : ${response.body()}")
+                logDebug("auth status code : $statusCode")
                 if (statusCode in 200 until 300) {
                     val resultData = response.body()?: AuthOutput()
                     completion(statusCode, resultData)
@@ -26,7 +26,10 @@ internal object TJLabsAuthNetworkManager {
             }
         })
     }
-
-
+    private fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d("CheckToken", message)
+        }
+    }
 
 }
