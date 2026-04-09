@@ -29,4 +29,3 @@ dependencyResolutionManagement {
 rootProject.name = "TJLabsAuth-sdk-android"
 include(":sdk")
 include(":sdk-sample-app")
-include(":tjlabsauth_sdk_android")
