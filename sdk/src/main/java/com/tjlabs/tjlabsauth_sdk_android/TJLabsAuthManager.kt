@@ -36,20 +36,15 @@ object TJLabsAuthManager {
         storedSecretAccessKey = keychain.load(KEY_SECRET_ACCESS_KEY) ?: ""
         clientSecret = keychain.load(KEY_CLIENT_SECRET) ?: clientSecret
 
-        Log.d("CheckToken", "initialize")
-        Log.d("CheckToken", "accessToken exp : $accessTokenExpDate")
-    }
-
-    private fun initialize(context: Context, clientSecret: String) {
-        initialize(context)
-        setClientSecret(clientSecret, persist = true)
+        logDebug("initialize")
+        logDebug("accessToken exp : $accessTokenExpDate")
     }
 
     internal fun setServerURL(region: String = AuthRegion.KOREA, serverType: String = "jupiter") {
         TJLabsAuthNetworkConstants.setServerURL(region, serverType)
     }
 
-    fun setClientSecret(context: Context, secret: String, persist: Boolean = true) {
+    fun setClientSecret(context: Context, secret: String, persist: Boolean = false) {
         if (!::keychain.isInitialized) {
             initialize(context)
         }
@@ -61,7 +56,7 @@ object TJLabsAuthManager {
         customSdkInfos = sdks
     }
 
-    private fun setClientSecret(secret: String, persist: Boolean = true) {
+    private fun setClientSecret(secret: String, persist: Boolean = false) {
         clientSecret = secret
         if (persist && ::keychain.isInitialized) {
             keychain.save(KEY_CLIENT_SECRET, secret)
@@ -312,6 +307,12 @@ object TJLabsAuthManager {
             json.getString("tenant_id")
         } catch (_: Exception) {
             null
+        }
+    }
+
+    private fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d("CheckToken", message)
         }
     }
 }

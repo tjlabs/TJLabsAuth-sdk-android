@@ -13,9 +13,8 @@
 # Keep DTO field names for Gson request/response mapping.
 -keep class com.tjlabs.tjlabsauth_sdk_android.AuthInput { <fields>; <init>(...); }
 -keep class com.tjlabs.tjlabsauth_sdk_android.AuthOutput { <fields>; <init>(...); }
--keep class com.tjlabs.tjlabsauth_sdk_android.RefreshTokenInput { <fields>; <init>(...); }
--keep class com.tjlabs.tjlabsauth_sdk_android.RefreshTokenOutput { <fields>; <init>(...); }
--keep class com.tjlabs.tjlabsauth_sdk_android.VerifyTokenInput { <fields>; <init>(...); }
+-keep class com.tjlabs.tjlabsauth_sdk_android.AuthClientMeta { <fields>; <init>(...); }
+-keep class com.tjlabs.tjlabsauth_sdk_android.Sdk { <fields>; <init>(...); }
 
 # Keep Retrofit service interface used internally by the SDK.
 -keep interface com.tjlabs.tjlabsauth_sdk_android.PostInput { *; }

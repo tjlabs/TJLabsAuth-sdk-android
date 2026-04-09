@@ -8,7 +8,7 @@ plugins {
 
 val versionMajor = 1
 val versionMinor = 0
-val versionPatch = 11
+val versionPatch = 12
 
 
 android {
@@ -44,6 +44,10 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 }
 
