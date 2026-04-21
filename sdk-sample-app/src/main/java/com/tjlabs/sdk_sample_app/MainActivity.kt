@@ -6,6 +6,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.tjlabs.sdk_sample_app.databinding.ActivityMainBinding
 import com.tjlabs.tjlabsauth_sdk_android.Sdk
+import com.tjlabs.tjlabsauth_sdk_android.ServerProvider
+import com.tjlabs.tjlabsauth_sdk_android.TJAuthLogger
 import com.tjlabs.tjlabsauth_sdk_android.TJLabsAuthManager
 
 class MainActivity : AppCompatActivity() {
@@ -19,6 +21,8 @@ class MainActivity : AppCompatActivity() {
             val secretAccessKey = BuildConfig.AUTH_SECRET_ACCESS_KEY.ifBlank { bind.editTextTextPassword.text.toString() }
             val clientSecret = BuildConfig.AUTH_CLIENT_SECRET
 
+            TJLabsAuthManager.setServerURL(provider = ServerProvider.GCP.value)
+
             if (accessKey.isBlank() || secretAccessKey.isBlank()) {
                 Log.e("CheckToken", "AUTH_ACCESS_KEY or AUTH_SECRET_ACCESS_KEY is empty.")
                 return@setOnClickListener
@@ -27,6 +31,8 @@ class MainActivity : AppCompatActivity() {
                 Log.e("CheckToken", "AUTH_CLIENT_SECRET is empty. Set it in local.properties")
                 return@setOnClickListener
             }
+
+            TJAuthLogger.setEnabled(true)
             TJLabsAuthManager.setClientSecret(applicationContext, clientSecret)
             TJLabsAuthManager.setSdkInfos(
                 listOf(

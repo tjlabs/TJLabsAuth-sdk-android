@@ -21,50 +21,67 @@ internal object TJLabsAuthNetworkConstants {
     private var SERVER_TYPE: String = "jupiter"
     private var USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$SERVER_TYPE$SUFFIX"
 
-    fun genRetrofit(token: String?): Retrofit {
+    fun genRetrofit(bearerToken: String? = null): Retrofit {
         val okHttpClientBuilder = OkHttpClient.Builder()
             .connectTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
             .readTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
             .writeTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
 
-        // token이 있을 경우에만 Interceptor 추가
-        token?.let {
-            okHttpClientBuilder.addInterceptor(HeaderInterceptor(it))
+        if (!bearerToken.isNullOrBlank()) {
+            okHttpClientBuilder.addInterceptor(HeaderInterceptor(bearerToken))
         }
+
+        val okHttpClient = okHttpClientBuilder.build()
 
         return Retrofit.Builder()
             .baseUrl(USER_URL)
             .addConverterFactory(GsonConverterFactory.create())
-            .client(okHttpClientBuilder.build())
+            .client(okHttpClient)
             .build()
     }
 
 
-    fun setServerURL(region: String, serverType: String) {
-        when (region) {
-            AuthRegion.KOREA -> {
-                REGION_PREFIX = "ap-northeast-2."
+    fun setServerURL(provider: String, region: String, serverType: String) {
+        val normalizedRegion = region.uppercase()
+        val normalizedProvider = provider.lowercase()
+        val normalizedServerType = serverType.ifBlank { "jupiter" }.lowercase()
+
+        when (normalizedRegion) {
+            AuthRegion.KOREA.value -> {
+                REGION_PREFIX = when (normalizedProvider) {
+                    ServerProvider.AWS.value -> "ap-northeast-2."
+                    ServerProvider.GCP.value -> "asia-northeast3."
+                    else -> {
+                        TJAuthLogger.e("[Network] invalid provider=$provider for Korea, fallback=aws")
+                        "ap-northeast-2."
+                    }
+                }
                 REGION_NAME = "Korea"
             }
 
-            AuthRegion.CANADA -> {
+            AuthRegion.CANADA.value -> {
                 REGION_PREFIX = "ca-central-1."
                 REGION_NAME = "Canada"
             }
 
-            AuthRegion.US_EAST -> {
+            AuthRegion.US_EAST.value -> {
                 REGION_PREFIX = "us-east-1."
                 REGION_NAME = "US"
             }
 
             else -> {
+                TJAuthLogger.e("[Network] invalid region=$region, fallback=KOREA")
                 REGION_PREFIX = "ap-northeast-2."
                 REGION_NAME = "Korea"
             }
         }
 
-        SERVER_TYPE = serverType
-        USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$serverType$SUFFIX"
+        SERVER_TYPE = normalizedServerType
+        USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$normalizedServerType$SUFFIX"
+        TJAuthLogger.d(
+            "[Network] server configured provider=$normalizedProvider region=$normalizedRegion " +
+                "serverType=$normalizedServerType baseUrl=$USER_URL"
+        )
     }
 
     fun getUserBaseURL(): String {
@@ -83,12 +100,10 @@ internal object TJLabsAuthNetworkConstants {
     class HeaderInterceptor(private val token: String) : Interceptor {
         @Throws(IOException::class)
         override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
-            val token = "Bearer $token"
             val newRequest = chain.request().newBuilder()
-                .addHeader("authorization", token)
+                .addHeader("authorization", "Bearer $token")
                 .build()
             return chain.proceed(newRequest)
         }
     }
 }
-

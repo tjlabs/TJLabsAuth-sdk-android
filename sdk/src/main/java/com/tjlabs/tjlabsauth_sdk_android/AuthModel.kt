@@ -1,15 +1,15 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
-data class AuthRegion(
-    val KOREA : String,
-    val US_EAST : String,
-    val CANADA : String
-) {
-    companion object {
-        val KOREA : String = "KOREA"
-        val US_EAST : String = "US_EAST"
-        val CANADA : String = "CANADA"
-    }
+
+
+enum class AuthRegion(val value : String)
+{
+    KOREA("KOREA"),US_EAST("US_EAST"), CANADA("CANADA")
+}
+
+enum class ServerProvider(val value: String) {
+    AWS("aws"),
+    GCP("gcp"),
 }
 
 
