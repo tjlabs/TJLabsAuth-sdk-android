@@ -65,6 +65,10 @@ object TJLabsAuthManager {
         TJAuthLogger.d("[Config] sdk info updated count=${sdks.size}")
     }
 
+    fun setLogEnabled(set : Boolean) {
+        TJAuthLogger.setEnabled(set)
+    }
+
     private fun setClientSecret(secret: String, persist: Boolean = false) {
         clientSecret = secret
         if (persist && ::keychain.isInitialized) {
