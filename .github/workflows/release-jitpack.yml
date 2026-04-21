@@ -147,13 +147,18 @@ jobs:
           name: jitpack-build-log-${{ steps.resolve_version.outputs.release_version }}
           path: jitpack-build.log
 
-      - name: Dispatch auth release event to resource repo
-        if: ${{ secrets.RESOURCE_REPO_DISPATCH_TOKEN != '' }}
+      - name: Dispatch auth release event to resource repo (optional)
         env:
           GH_TOKEN: ${{ secrets.RESOURCE_REPO_DISPATCH_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
+
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "Skip resource dispatch (RESOURCE_REPO_DISPATCH_TOKEN is not configured)."
+            exit 0
+          fi
+
           release_version="${{ steps.resolve_version.outputs.release_version }}"
           api_url="https://api.github.com/repos/${RESOURCE_REPO}/dispatches"
 
@@ -170,7 +175,3 @@ jobs:
             }
           }
           JSON
-
-      - name: Resource dispatch not configured
-        if: ${{ secrets.RESOURCE_REPO_DISPATCH_TOKEN == '' }}
-        run: echo "Skip resource dispatch (RESOURCE_REPO_DISPATCH_TOKEN is not configured)."
