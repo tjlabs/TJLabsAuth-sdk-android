@@ -2,4 +2,4 @@ jdk:
   - openjdk17
 
 install:
-  - ./gradlew :sdk:publishToMavenLocal -x test
+  - ./gradlew :sdk:publishToMavenLocal -x test --stacktrace --no-daemon
