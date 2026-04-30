@@ -4,7 +4,7 @@ package com.tjlabs.tjlabsauth_sdk_android
 
 enum class AuthRegion(val value : String)
 {
-    KOREA("KOREA"),US_EAST("US_EAST"), CANADA("CANADA")
+    KOREA("KOREA"),US_EAST("US_EAST"), CANADA("CANADA"), SAUDI("SAUDI")
 }
 
 enum class ServerProvider(val value: String) {
