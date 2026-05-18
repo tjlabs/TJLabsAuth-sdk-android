@@ -12,6 +12,7 @@ object TJLabsAuthManager {
     private const val KEY_ACCESS_KEY = "TJLabs.accessKey"
     private const val KEY_SECRET_ACCESS_KEY = "TJLabs.secretAccessKey"
     private const val KEY_CLIENT_SECRET = "TJLabs.clientSecret"
+    private const val KEY_TENANT_USER_NAME = "TJLabs.tenantUserName"
     private const val AUTH_REISSUE_RETRY_LIMIT = 1
 
     private var accessToken: String = ""
@@ -20,6 +21,7 @@ object TJLabsAuthManager {
     private var storedAccessKey: String = ""
     private var storedSecretAccessKey: String = ""
     private var clientSecret: String = ""
+    private var tenantUserName: String? = null
     private var customSdkInfos: List<Sdk> = emptyList()
 
     private lateinit var keychain: KeychainHelper
@@ -35,6 +37,7 @@ object TJLabsAuthManager {
         storedAccessKey = keychain.load(KEY_ACCESS_KEY) ?: ""
         storedSecretAccessKey = keychain.load(KEY_SECRET_ACCESS_KEY) ?: ""
         clientSecret = keychain.load(KEY_CLIENT_SECRET) ?: clientSecret
+        tenantUserName = keychain.load(KEY_TENANT_USER_NAME)
 
         TJAuthLogger.d("[Init] manager initialized")
         TJAuthLogger.d(
@@ -43,7 +46,8 @@ object TJLabsAuthManager {
                 "exp=$accessTokenExpDate " +
                 "accessKey=${storedAccessKey.isNotBlank()} " +
                 "secretAccessKey=${storedSecretAccessKey.isNotBlank()} " +
-                "clientSecret=${clientSecret.isNotBlank()}"
+                "clientSecret=${clientSecret.isNotBlank()} " +
+                "tenantUserName=${tenantUserName != null}"
         )
     }
 
@@ -69,6 +73,8 @@ object TJLabsAuthManager {
         TJAuthLogger.setEnabled(set)
     }
 
+    fun getTenantUserName(): String? = tenantUserName
+
     private fun setClientSecret(secret: String, persist: Boolean = false) {
         clientSecret = secret
         if (persist && ::keychain.isInitialized) {
@@ -85,7 +91,21 @@ object TJLabsAuthManager {
             keychain.save(KEY_ACCESS_TOKEN, accessToken)
             keychain.save(KEY_ACCESS_TOKEN_EXP, accessTokenExpDate.epochSecond.toString())
         }
+
+        tenantUserName = authOutput.tenant_user_name
+        if (::keychain.isInitialized) {
+            val cachedTenantUserName = tenantUserName
+            if (cachedTenantUserName.isNullOrBlank()) {
+                keychain.delete(KEY_TENANT_USER_NAME)
+            } else {
+                keychain.save(KEY_TENANT_USER_NAME, cachedTenantUserName)
+            }
+        }
+
         TJAuthLogger.d("[Token] cached access token exp=$accessTokenExpDate")
+        TJAuthLogger.d("[Token] tenantUserName received=${!tenantUserName.isNullOrBlank()}")
+        TJAuthLogger.d("[Token] tenantUserName =$tenantUserName")
+
     }
 
     fun getAccessToken(update: Boolean = true, completion: (TokenResult) -> Unit) {
