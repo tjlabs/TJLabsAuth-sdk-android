@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
             val secretAccessKey = BuildConfig.AUTH_SECRET_ACCESS_KEY.ifBlank { bind.editTextTextPassword.text.toString() }
             val clientSecret = BuildConfig.AUTH_CLIENT_SECRET
 
-            TJLabsAuthManager.setServerURL(provider = ServerProvider.GCP.value, region = AuthRegion.SAUDI.value)
+            TJLabsAuthManager.setServerURL(provider = ServerProvider.GCP.value, region = AuthRegion.KOREA.value)
 
             if (accessKey.isBlank() || secretAccessKey.isBlank()) {
                 Log.e("CheckToken", "AUTH_ACCESS_KEY or AUTH_SECRET_ACCESS_KEY is empty.")
