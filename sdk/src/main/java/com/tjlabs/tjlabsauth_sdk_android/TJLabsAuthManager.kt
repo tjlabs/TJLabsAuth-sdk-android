@@ -73,6 +73,12 @@ object TJLabsAuthManager {
         TJAuthLogger.setEnabled(set)
     }
 
+    fun isAuthenticated(): Boolean {
+        val authenticated = isAccessTokenValid(thresholdSeconds = 0)
+        TJAuthLogger.d("[Auth] isAuthenticated=$authenticated")
+        return authenticated
+    }
+
     fun getTenantUserName(): String? = tenantUserName
 
     private fun setClientSecret(secret: String, persist: Boolean = false) {
@@ -104,8 +110,6 @@ object TJLabsAuthManager {
 
         TJAuthLogger.d("[Token] cached access token exp=$accessTokenExpDate")
         TJAuthLogger.d("[Token] tenantUserName received=${!tenantUserName.isNullOrBlank()}")
-        TJAuthLogger.d("[Token] tenantUserName =$tenantUserName")
-
     }
 
     fun getAccessToken(update: Boolean = true, completion: (TokenResult) -> Unit) {
