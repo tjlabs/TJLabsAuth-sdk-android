@@ -53,50 +53,8 @@ class MainActivity : AppCompatActivity() {
 
             TJAuthLogger.setEnabled(true)
             TJLabsAuthManager.setClientSecret(applicationContext, clientSecret)
-            TJLabsAuthManager.setSdkInfos(            val accessKey = BuildConfig.AUTH_ACCESS_KEY.ifBlank { bind.editTextText.text.toString() }
-            val secretAccessKey = BuildConfig.AUTH_SECRET_ACCESS_KEY.ifBlank { bind.editTextTextPassword.text.toString() }
-            val clientSecret = BuildConfig.AUTH_CLIENT_SECRET
-
-            TJLabsAuthManager.setServerURL(provider = ServerProvider.GCP.value, region = AuthRegion.KOREA.value)
-
-            if (accessKey.isBlank() || secretAccessKey.isBlank()) {
-                val message = "AUTH_ACCESS_KEY or AUTH_SECRET_ACCESS_KEY is empty."
-                Log.e("CheckToken", message)
-                bind.textViewResult.text = buildCurrentResultText(
-                    status = "Auth failed",
-                    detail = message
-                )
-                return@setOnClickListener
-            }
-            if (clientSecret.isBlank()) {
-                val message = "AUTH_CLIENT_SECRET is empty. Set it in local.properties."
-                Log.e("CheckToken", message)
-                bind.textViewResult.text = buildCurrentResultText(
-                    status = "Auth failed",
-                    detail = message
-                )
-                return@setOnClickListener
-            }
-
-            TJAuthLogger.setEnabled(true)
-            TJLabsAuthManager.setClientSecret(applicationContext, clientSecret)
             TJLabsAuthManager.setSdkInfos(
                 listOf(
-                    Sdk(name = "TJLabsNavi-sdk-android", version = "1.0.0"),
-                    Sdk(name = "TJLabsJupiter-sdk-android", version = "1.0.0")
-                )
-            )
-            bind.textViewResult.text = "Auth request in progress..."
-
-            TJLabsAuthManager.auth(applicationContext, accessKey, secretAccessKey) { code, result ->
-                Log.d("CheckToken", "auth // code : $code // result : $result")
-                bind.textViewResult.text = buildCurrentResultText(
-                    status = if (code == 200) "Auth success" else "Auth failed",
-                    detail = "code=$code, result=$result"
-                )
-            }
-
-            listOf(
                     Sdk(name = "TJLabsNavi-sdk-android", version = "1.0.0"),
                     Sdk(name = "TJLabsJupiter-sdk-android", version = "1.0.0")
                 )
