@@ -33,10 +33,15 @@ data class Sdk(
     val version : String
 )
 
+data class Tenant(
+    val id : Int = -1,
+    val name : String = "",
+    val user_name : String = ""
+)
 data class AuthOutput(
     val access: String = "",
     val expires_in: Int = 0,
-    val tenant_user_name: String? = null
+    val tenant : Tenant = Tenant()
 )
 
 sealed class TokenResult {
