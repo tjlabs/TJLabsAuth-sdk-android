@@ -43,6 +43,9 @@ TJLabsAuthManager.setClientSecret(
 TJLabsAuthManager.auth(accessKey, secretAccessKey) { statusCode, success ->
     // success == true 이면 access token 발급 성공
 }
+
+// 3) 현재 인증 상태 확인
+val isAuthenticated = TJLabsAuthManager.isAuthenticated()
 ```
 
 ## Request Payload
