@@ -29,7 +29,7 @@ object TJLabsAuthManager {
     private lateinit var keychain: KeychainHelper
     private var appContext: Context? = null
 
-    private fun initialize(context: Context) {
+    fun initialize(context: Context) {
         appContext = context.applicationContext
         keychain = KeychainHelper.getInstance(context)
 
@@ -55,15 +55,27 @@ object TJLabsAuthManager {
         )
     }
 
+    private fun ensureInitialized(context: Context? = appContext) {
+        val initContext = context?.applicationContext
+        if (::keychain.isInitialized && initContext != null) {
+            appContext = initContext
+            return
+        }
+
+        if (initContext != null) {
+            initialize(initContext)
+        } else if (!::keychain.isInitialized) {
+            TJAuthLogger.e("[Init] manager is not initialized; provide context first")
+        }
+    }
+
     fun setServerURL(provider: String, region: String = AuthRegion.KOREA.value, serverType: String = "jupiter") {
         TJAuthLogger.d("[Config] setServerURL provider=$provider region=$region serverType=$serverType")
         TJLabsAuthNetworkConstants.setServerURL(provider, region, serverType)
     }
 
     fun setClientSecret(context: Context, secret: String, persist: Boolean = false) {
-        if (!::keychain.isInitialized) {
-            initialize(context)
-        }
+        ensureInitialized(context)
         setClientSecret(secret, persist)
     }
 
@@ -78,14 +90,30 @@ object TJLabsAuthManager {
     }
 
     fun isAuthenticated(): Boolean {
+        ensureInitialized()
         val authenticated = isAccessTokenValid(thresholdSeconds = 0)
         TJAuthLogger.d("[Auth] isAuthenticated=$authenticated")
         return authenticated
     }
 
+    fun isAuthenticated(context: Context): Boolean {
+        ensureInitialized(context)
+        return isAuthenticated()
+    }
+
     fun getTenantName(): String? = tenantName
 
+    fun getTenantName(context: Context): String? {
+        ensureInitialized(context)
+        return tenantName
+    }
+
     fun getTenantUserName(): String? = tenantUserName
+
+    fun getTenantUserName(context: Context): String? {
+        ensureInitialized(context)
+        return tenantUserName
+    }
 
     private fun setClientSecret(secret: String, persist: Boolean = false) {
         clientSecret = secret
@@ -104,8 +132,8 @@ object TJLabsAuthManager {
             keychain.save(KEY_ACCESS_TOKEN_EXP, accessTokenExpDate.epochSecond.toString())
         }
 
-        tenantUserName = authOutput.tenant_user_name
-        tenantName = authOutput.tenant_name
+        tenantUserName = authOutput.tenant.user_name
+        tenantName = authOutput.tenant.name
         if (::keychain.isInitialized) {
             val cachedTenantUserName = tenantUserName
             if (cachedTenantUserName.isNullOrBlank()) {
@@ -177,15 +205,18 @@ object TJLabsAuthManager {
         return ""
     }
 
+    fun auth(context: Context, accessKey: String, secretAccessKey: String, completion: (Int, Boolean) -> Unit) {
+        ensureInitialized(context)
+        auth(accessKey, secretAccessKey, completion)
+    }
+
     fun auth(accessKey: String, secretAccessKey: String, completion: (Int, Boolean) -> Unit) {
+        ensureInitialized()
         TJAuthLogger.d(
             "[Auth] auth requested " +
                 "accessKey=${mask(accessKey)} " +
                 "secretAccessKey=${mask(secretAccessKey)}"
         )
-        if (!::keychain.isInitialized) {
-            appContext?.let { initialize(it) }
-        }
 
         storedAccessKey = accessKey
         storedSecretAccessKey = secretAccessKey

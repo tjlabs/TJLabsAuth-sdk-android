@@ -40,12 +40,15 @@ TJLabsAuthManager.setClientSecret(
 
 
 // 2) auth 호출
-TJLabsAuthManager.auth(accessKey, secretAccessKey) { statusCode, success ->
+// auth 호출 시 manager 초기화도 함께 진행됨
+TJLabsAuthManager.auth(applicationContext, accessKey, secretAccessKey) { statusCode, success ->
     // success == true 이면 access token 발급 성공
 }
 
-// 3) 현재 인증 상태 확인
-val isAuthenticated = TJLabsAuthManager.isAuthenticated()
+// 3) 현재 인증 상태 및 tenant 정보 확인
+val isAuthenticated = TJLabsAuthManager.isAuthenticated(applicationContext)
+val tenantName = TJLabsAuthManager.getTenantName(applicationContext)
+val tenantUserName = TJLabsAuthManager.getTenantUserName(applicationContext)
 ```
 
 ## Request Payload
