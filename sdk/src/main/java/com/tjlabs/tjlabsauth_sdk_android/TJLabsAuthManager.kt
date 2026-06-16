@@ -20,6 +20,7 @@ object TJLabsAuthManager {
     private var storedAccessKey: String = ""
     private var storedSecretAccessKey: String = ""
     private var clientSecret: String = ""
+    private var authenticated: Boolean = false
     private var tenantUserName: String? = null
     private var tenantName: String? = null
     private var customSdkInfos: List<Sdk> = emptyList()
@@ -37,6 +38,7 @@ object TJLabsAuthManager {
         storedAccessKey = keychain.load(KEY_ACCESS_KEY) ?: ""
         storedSecretAccessKey = keychain.load(KEY_SECRET_ACCESS_KEY) ?: ""
         clientSecret = keychain.load(KEY_CLIENT_SECRET) ?: clientSecret
+        authenticated = false
         tenantUserName = null
         tenantName = null
         clearLegacyTenantCache()
@@ -49,6 +51,7 @@ object TJLabsAuthManager {
                 "accessKey=${storedAccessKey.isNotBlank()} " +
                 "secretAccessKey=${storedSecretAccessKey.isNotBlank()} " +
                 "clientSecret=${clientSecret.isNotBlank()} " +
+                "authenticated=$authenticated " +
                 "tenantUserName=false " +
                 "tenantName=false"
         )
@@ -90,7 +93,6 @@ object TJLabsAuthManager {
 
     fun isAuthenticated(): Boolean {
         ensureInitialized()
-        val authenticated = isAccessTokenValid(thresholdSeconds = 0)
         TJAuthLogger.d("[Auth] isAuthenticated=$authenticated")
         return authenticated
     }
@@ -108,6 +110,11 @@ object TJLabsAuthManager {
         tenantName = null
         tenantUserName = null
         TJAuthLogger.d("[Token] cleared tenant info")
+    }
+
+    private fun setAuthenticated(value: Boolean) {
+        authenticated = value
+        TJAuthLogger.d("[Auth] authentication state updated=$value")
     }
 
     private fun setClientSecret(secret: String, persist: Boolean = false) {
@@ -211,6 +218,7 @@ object TJLabsAuthManager {
         }
 
         if (clientSecret.isBlank()) {
+            setAuthenticated(false)
             clearTenantInfo()
             TJAuthLogger.e("[Auth] clientSecret is missing, auth aborted")
             completion(400, false)
@@ -437,11 +445,13 @@ object TJLabsAuthManager {
             val success = (code in 200 until 300) && output.access.isNotBlank()
             if (success) {
                 setTokenInfo(output)
+                setAuthenticated(true)
                 TJAuthLogger.d("[Auth] request success code=$code attempt=$attemptNo")
                 completion(code, true)
                 return@postAuthToken
             }
 
+            setAuthenticated(false)
             TJAuthLogger.e("[Auth] request failed code=$code hasAccess=${output.access.isNotBlank()} attempt=$attemptNo")
             val shouldRetry = attempt < AUTH_REISSUE_RETRY_LIMIT
             if (shouldRetry) {
