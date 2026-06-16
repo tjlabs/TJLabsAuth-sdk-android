@@ -12,8 +12,6 @@ object TJLabsAuthManager {
     private const val KEY_ACCESS_KEY = "TJLabs.accessKey"
     private const val KEY_SECRET_ACCESS_KEY = "TJLabs.secretAccessKey"
     private const val KEY_CLIENT_SECRET = "TJLabs.clientSecret"
-    private const val KEY_TENANT_USER_NAME = "TJLabs.tenantUserName"
-    private const val KEY_TENANT_NAME = "TJLabs.tenantName"
     private const val AUTH_REISSUE_RETRY_LIMIT = 1
 
     private var accessToken: String = ""
@@ -39,8 +37,9 @@ object TJLabsAuthManager {
         storedAccessKey = keychain.load(KEY_ACCESS_KEY) ?: ""
         storedSecretAccessKey = keychain.load(KEY_SECRET_ACCESS_KEY) ?: ""
         clientSecret = keychain.load(KEY_CLIENT_SECRET) ?: clientSecret
-        tenantUserName = keychain.load(KEY_TENANT_USER_NAME)
-        tenantName = keychain.load(KEY_TENANT_NAME)
+        tenantUserName = null
+        tenantName = null
+        clearLegacyTenantCache()
 
         TJAuthLogger.d("[Init] manager initialized")
         TJAuthLogger.d(
@@ -50,8 +49,8 @@ object TJLabsAuthManager {
                 "accessKey=${storedAccessKey.isNotBlank()} " +
                 "secretAccessKey=${storedSecretAccessKey.isNotBlank()} " +
                 "clientSecret=${clientSecret.isNotBlank()} " +
-                "tenantUserName=${tenantUserName != null} " +
-                "tenantName=${tenantName != null}"
+                "tenantUserName=false " +
+                "tenantName=false"
         )
     }
 
@@ -103,16 +102,12 @@ object TJLabsAuthManager {
 
     fun getTenantName(): String? = tenantName
 
-    fun getTenantName(context: Context): String? {
-        ensureInitialized(context)
-        return tenantName
-    }
-
     fun getTenantUserName(): String? = tenantUserName
 
-    fun getTenantUserName(context: Context): String? {
-        ensureInitialized(context)
-        return tenantUserName
+    private fun clearTenantInfo() {
+        tenantName = null
+        tenantUserName = null
+        TJAuthLogger.d("[Token] cleared tenant info")
     }
 
     private fun setClientSecret(secret: String, persist: Boolean = false) {
@@ -134,21 +129,6 @@ object TJLabsAuthManager {
 
         tenantUserName = authOutput.tenant.user_name
         tenantName = authOutput.tenant.name
-        if (::keychain.isInitialized) {
-            val cachedTenantUserName = tenantUserName
-            if (cachedTenantUserName.isNullOrBlank()) {
-                keychain.delete(KEY_TENANT_USER_NAME)
-            } else {
-                keychain.save(KEY_TENANT_USER_NAME, cachedTenantUserName)
-            }
-
-            val cachedTenantName = tenantName
-            if (cachedTenantName.isNullOrBlank()) {
-                keychain.delete(KEY_TENANT_NAME)
-            } else {
-                keychain.save(KEY_TENANT_NAME, cachedTenantName)
-            }
-        }
 
         TJAuthLogger.d("[Token] cached access token exp=$accessTokenExpDate")
         TJAuthLogger.d("[Token] tenantName received=${!tenantName.isNullOrBlank()}")
@@ -231,6 +211,7 @@ object TJLabsAuthManager {
         }
 
         if (clientSecret.isBlank()) {
+            clearTenantInfo()
             TJAuthLogger.e("[Auth] clientSecret is missing, auth aborted")
             completion(400, false)
             return
@@ -258,6 +239,14 @@ object TJLabsAuthManager {
         val remainSeconds = accessTokenExpDate.epochSecond - Instant.now().epochSecond
         TJAuthLogger.d("[Token] validity check valid=$valid threshold=${thresholdSeconds}s remain=${remainSeconds}s")
         return valid
+    }
+
+    private fun clearLegacyTenantCache() {
+        if (!::keychain.isInitialized) {
+            return
+        }
+        keychain.delete("TJLabs.tenantUserName")
+        keychain.delete("TJLabs.tenantName")
     }
 
     private fun reAuthenticateIfPossible(completion: (TokenResult) -> Unit) {
@@ -466,6 +455,7 @@ object TJLabsAuthManager {
                     completion = completion
                 )
             } else {
+                clearTenantInfo()
                 completion(code, false)
             }
         }
