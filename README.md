@@ -47,8 +47,8 @@ TJLabsAuthManager.auth(applicationContext, accessKey, secretAccessKey) { statusC
 
 // 3) 현재 인증 상태 및 tenant 정보 확인
 val isAuthenticated = TJLabsAuthManager.isAuthenticated(applicationContext)
-val tenantName = TJLabsAuthManager.getTenantName(applicationContext)
-val tenantUserName = TJLabsAuthManager.getTenantUserName(applicationContext)
+val tenantName = TJLabsAuthManager.getTenantName()
+val tenantUserName = TJLabsAuthManager.getTenantUserName()
 ```
 
 ## Request Payload
