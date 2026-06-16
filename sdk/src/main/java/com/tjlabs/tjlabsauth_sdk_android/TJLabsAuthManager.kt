@@ -444,6 +444,8 @@ object TJLabsAuthManager {
         TJLabsAuthNetworkManager.postAuthToken(url, authInput, TJLabsAuthNetworkConstants.getUserTokenVersion()) { code, output ->
             val success = (code in 200 until 300) && output.access.isNotBlank()
             if (success) {
+                TJAuthLogger.d("[Auth] request output : $output")
+
                 setTokenInfo(output)
                 setAuthenticated(true)
                 TJAuthLogger.d("[Auth] request success code=$code attempt=$attemptNo")

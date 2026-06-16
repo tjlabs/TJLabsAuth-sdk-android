@@ -1,5 +1,6 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
+import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.*
 
@@ -10,5 +11,5 @@ internal interface PostInput {
     )
 
     @POST("/{token_server_version}/tenants/access-keys/token")
-    fun postAuth(@Body param: AuthInput, @Path("token_server_version") authServerVersion : String) : Call<AuthOutput>
+    fun postAuth(@Body param: AuthInput, @Path("token_server_version") authServerVersion : String) : Call<ResponseBody>
 }
