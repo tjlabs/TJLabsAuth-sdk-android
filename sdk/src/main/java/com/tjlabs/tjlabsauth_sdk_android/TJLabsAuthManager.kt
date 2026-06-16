@@ -151,8 +151,8 @@ object TJLabsAuthManager {
         }
 
         TJAuthLogger.d("[Token] cached access token exp=$accessTokenExpDate")
-        TJAuthLogger.d("[Token] tenantName received=${!tenantName.isNullOrBlank()}")
-        TJAuthLogger.d("[Token] tenantUserName received=${!tenantUserName.isNullOrBlank()}")
+        TJAuthLogger.d("[Token] tenantName received=${tenantName}")
+        TJAuthLogger.d("[Token] tenantUserName received=${tenantUserName}")
     }
 
     fun getAccessToken(update: Boolean = true, completion: (TokenResult) -> Unit) {
