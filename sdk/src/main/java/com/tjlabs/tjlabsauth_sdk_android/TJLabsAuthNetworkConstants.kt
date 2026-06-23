@@ -1,5 +1,8 @@
 package com.tjlabs.tjlabsauth_sdk_android
 
+import okhttp3.Call
+import okhttp3.ConnectionPool
+import okhttp3.EventListener
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -20,25 +23,57 @@ internal object TJLabsAuthNetworkConstants {
     private var SERVER_TYPE: String = "jupiter"
     private var USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$SERVER_TYPE$SUFFIX"
 
-    fun genRetrofit(bearerToken: String? = null): Retrofit {
-        val okHttpClientBuilder = OkHttpClient.Builder()
+    // Single shared OkHttpClient across all auth() / refresh() calls.
+    // Connection pool, DNS cache, TLS session cache, and dispatcher are reused.
+    // Recreating the client per-call was the dominant cold-path cost: every auth()
+    // re-did DNS resolution + TCP handshake + TLS handshake (~500–800ms on GCP
+    // asia-northeast3 from a Korean mobile network).
+    private val sharedClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
             .connectTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
             .readTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
             .writeTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
-
-        if (!bearerToken.isNullOrBlank()) {
-            okHttpClientBuilder.addInterceptor(HeaderInterceptor(bearerToken))
-        }
-
-        val okHttpClient = okHttpClientBuilder.build()
-
-        return Retrofit.Builder()
-            .baseUrl(USER_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .client(okHttpClient)
+            // Keep idle TLS connections alive long enough to amortize across user actions.
+            .connectionPool(ConnectionPool(5, 5, TimeUnit.MINUTES))
+            .retryOnConnectionFailure(true)
+            .eventListenerFactory(object : EventListener.Factory {
+                override fun create(call: Call): EventListener = TJLabsAuthEventListener()
+            })
             .build()
     }
 
+    // Retrofit instance cached per (baseUrl + bearerToken) tuple.
+    // setServerURL() invalidates the cache so the next call picks up the new baseUrl.
+    @Volatile
+    private var cachedRetrofitKey: String = ""
+    @Volatile
+    private var cachedRetrofit: Retrofit? = null
+
+    fun genRetrofit(bearerToken: String? = null): Retrofit {
+        val key = USER_URL + "|" + (bearerToken ?: "")
+        cachedRetrofit?.let { if (cachedRetrofitKey == key) return it }
+        return synchronized(this) {
+            cachedRetrofit?.let { if (cachedRetrofitKey == key) return it }
+            val client = if (bearerToken.isNullOrBlank()) {
+                sharedClient
+            } else {
+                sharedClient.newBuilder()
+                    .addInterceptor(HeaderInterceptor(bearerToken))
+                    .build()
+            }
+            val retrofit = Retrofit.Builder()
+                .baseUrl(USER_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build()
+            cachedRetrofit = retrofit
+            cachedRetrofitKey = key
+            retrofit
+        }
+    }
+
+    /** Returns the shared OkHttpClient for low-level use (e.g. prewarm HEAD requests). */
+    fun sharedOkHttpClient(): OkHttpClient = sharedClient
 
     fun setServerURL(provider: String, region: String, serverType: String) {
         val normalizedRegion = region.uppercase()
@@ -75,7 +110,14 @@ internal object TJLabsAuthNetworkConstants {
         }
 
         SERVER_TYPE = normalizedServerType
-        USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$normalizedServerType$SUFFIX"
+        val newUrl = "$HTTP_PREFIX${REGION_PREFIX}user.$normalizedServerType$SUFFIX"
+        if (newUrl != USER_URL) {
+            USER_URL = newUrl
+            // Force Retrofit rebuild on next call so the new baseUrl is picked up.
+            // The shared OkHttpClient (connection pool, DNS cache) is preserved.
+            cachedRetrofit = null
+            cachedRetrofitKey = ""
+        }
         TJAuthLogger.d(
             "[Network] server configured provider=$normalizedProvider region=$normalizedRegion " +
                 "serverType=$normalizedServerType baseUrl=$USER_URL"
