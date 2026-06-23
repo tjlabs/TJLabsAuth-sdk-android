@@ -2,9 +2,11 @@ package com.tjlabs.tjlabsauth_sdk_android
 
 import android.content.Context
 import android.os.Build
+import okhttp3.Request
 import org.json.JSONObject
 import java.time.Instant
 import java.util.Base64
+import java.util.concurrent.Executors
 
 object TJLabsAuthManager {
     private const val KEY_ACCESS_TOKEN = "TJLabs.accessToken"
@@ -27,6 +29,14 @@ object TJLabsAuthManager {
 
     private lateinit var keychain: KeychainHelper
     private var appContext: Context? = null
+
+    // Single-thread background executor for prewarm work (master key + TLS handshake).
+    // Kept private; users only see the public prewarm() entry point.
+    private val backgroundExecutor by lazy {
+        Executors.newSingleThreadExecutor { r ->
+            Thread(r, "TJLabsAuth-prewarm").apply { isDaemon = true }
+        }
+    }
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -55,6 +65,46 @@ object TJLabsAuthManager {
                 "tenantUserName=false " +
                 "tenantName=false"
         )
+    }
+
+    /**
+     * Opt-in pre-warm: forces (off the main thread) the two cold-start costs that
+     * dominate the first auth() call —
+     *  1) Android KeyStore master-key generation for EncryptedSharedPreferences
+     *  2) DNS resolution + TCP handshake + TLS handshake to the auth endpoint
+     *
+     * Safe to call multiple times; the second call returns almost immediately if
+     * prefs are already created and a pooled TLS connection still exists.
+     *
+     * Recommended usage:
+     *   TJLabsAuthManager.initialize(context)
+     *   TJLabsAuthManager.setServerURL(provider, region)
+     *   TJLabsAuthManager.prewarm(context)
+     */
+    fun prewarm(context: Context) {
+        ensureInitialized(context)
+        val keychainRef = if (::keychain.isInitialized) keychain else null
+        val url = TJLabsAuthNetworkConstants.getUserBaseURL()
+        backgroundExecutor.execute {
+            val perf = TJLabsAuthPerf.newSession("prewarm")
+            perf.markStart()
+
+            // (1) Master-key warm-up.
+            keychainRef?.ensureReady()
+            perf.mark("prefs_init")
+
+            // (2) TLS connection warm-up. A HEAD on the base URL is cheap; the response
+            // status doesn't matter — we only care that the TLS session lives in the
+            // shared connection pool when auth() is eventually called.
+            try {
+                val req = Request.Builder().url(url).head().build()
+                TJLabsAuthNetworkConstants.sharedOkHttpClient().newCall(req).execute().use { /* discard */ }
+            } catch (t: Throwable) {
+                TJAuthLogger.e("[Prewarm] connection warm-up failed (non-fatal)", t)
+            }
+            perf.mark("tls_warmup")
+            perf.end()
+        }
     }
 
     private fun ensureInitialized(context: Context? = appContext) {
@@ -130,8 +180,15 @@ object TJLabsAuthManager {
         accessTokenExpDate = resolveAccessTokenExpiration(authOutput)
 
         if (::keychain.isInitialized) {
-            keychain.save(KEY_ACCESS_TOKEN, accessToken)
-            keychain.save(KEY_ACCESS_TOKEN_EXP, accessTokenExpDate.epochSecond.toString())
+            // commit() (not apply()) so the access token survives an immediate
+            // process kill — otherwise getAccessToken() on next cold start would
+            // miss the cache and force a redundant auth() round-trip.
+            keychain.saveSyncBatch(
+                mapOf(
+                    KEY_ACCESS_TOKEN to accessToken,
+                    KEY_ACCESS_TOKEN_EXP to accessTokenExpDate.epochSecond.toString()
+                )
+            )
         }
 
         tenantUserName = authOutput.tenant.user_name
@@ -198,7 +255,12 @@ object TJLabsAuthManager {
     }
 
     fun auth(accessKey: String, secretAccessKey: String, completion: (Int, Boolean) -> Unit) {
+        val perf = TJLabsAuthPerf.newSession("auth")
+        perf.markStart()
+
         ensureInitialized()
+        perf.mark("ensure_init")
+
         TJAuthLogger.d(
             "[Auth] auth requested " +
                 "accessKey=${mask(accessKey)} " +
@@ -212,6 +274,7 @@ object TJLabsAuthManager {
             keychain.save(KEY_ACCESS_KEY, accessKey)
             keychain.save(KEY_SECRET_ACCESS_KEY, secretAccessKey)
         }
+        perf.mark("credential_persist")
 
         if (clientSecret.isBlank() && ::keychain.isInitialized) {
             clientSecret = keychain.load(KEY_CLIENT_SECRET) ?: ""
@@ -221,18 +284,22 @@ object TJLabsAuthManager {
             setAuthenticated(false)
             clearTenantInfo()
             TJAuthLogger.e("[Auth] clientSecret is missing, auth aborted")
+            perf.end("ok=false code=400 reason=missing_client_secret")
             completion(400, false)
             return
         }
 
         val url = TJLabsAuthNetworkConstants.getUserBaseURL()
         val clientMeta = buildClientMeta()
+        perf.mark("build_request")
+
         requestAuthToken(
             accessKey = accessKey,
             secretAccessKey = secretAccessKey,
             clientMeta = clientMeta,
             url = url,
             attempt = 0,
+            perf = perf,
             completion = completion
         )
     }
@@ -429,6 +496,7 @@ object TJLabsAuthManager {
         clientMeta: AuthClientMeta,
         url: String,
         attempt: Int,
+        perf: TJLabsAuthPerf.Session,
         completion: (Int, Boolean) -> Unit
     ) {
         val attemptNo = attempt + 1
@@ -441,14 +509,22 @@ object TJLabsAuthManager {
             client_meta = clientMeta
         )
 
-        TJLabsAuthNetworkManager.postAuthToken(url, authInput, TJLabsAuthNetworkConstants.getUserTokenVersion()) { code, output ->
+        TJLabsAuthNetworkManager.postAuthToken(
+            url = url,
+            input = authInput,
+            authServerVersion = TJLabsAuthNetworkConstants.getUserTokenVersion(),
+            perf = perf
+        ) { code, output ->
             val success = (code in 200 until 300) && output.access.isNotBlank()
             if (success) {
                 TJAuthLogger.d("[Auth] request output : $output")
 
+                val persistStart = System.nanoTime()
                 setTokenInfo(output)
+                perf.record("token_persist", (System.nanoTime() - persistStart) / 1_000_000)
                 setAuthenticated(true)
                 TJAuthLogger.d("[Auth] request success code=$code attempt=$attemptNo")
+                perf.end("ok=true code=$code attempt=$attemptNo")
                 completion(code, true)
                 return@postAuthToken
             }
@@ -464,10 +540,12 @@ object TJLabsAuthManager {
                     clientMeta = clientMeta,
                     url = url,
                     attempt = attempt + 1,
+                    perf = perf,
                     completion = completion
                 )
             } else {
                 clearTenantInfo()
+                perf.end("ok=false code=$code attempt=$attemptNo")
                 completion(code, false)
             }
         }

@@ -8,7 +8,7 @@ plugins {
 
 val versionMajor = 1
 val versionMinor = 0
-val versionPatch = 25
+val versionPatch = 26
 
 
 android {
@@ -62,7 +62,7 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = "com.tjlabs"
+                groupId = "com.github.tjlabs"
                 artifactId = "TJLabsAuth-sdk-android"
                 version = "$versionMajor.$versionMinor.$versionPatch"
             }

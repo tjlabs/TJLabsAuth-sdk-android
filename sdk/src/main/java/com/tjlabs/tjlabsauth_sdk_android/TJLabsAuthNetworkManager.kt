@@ -6,29 +6,56 @@ import retrofit2.Callback
 import retrofit2.Response
 
 internal object TJLabsAuthNetworkManager {
-    fun postAuthToken(url : String, input : AuthInput, authServerVersion: String, completion: (Int, AuthOutput) -> Unit) {
+    fun postAuthToken(
+        url: String,
+        input: AuthInput,
+        authServerVersion: String,
+        perf: TJLabsAuthPerf.Session = TJLabsAuthPerf.newSession("noop"),
+        completion: (Int, AuthOutput) -> Unit
+    ) {
         TJAuthLogger.d("[Network] postAuthToken start version=$authServerVersion url=$url")
         val retrofit = TJLabsAuthNetworkConstants.genRetrofit()
         val postPathPixel = retrofit.create(PostInput::class.java)
+
+        // Bind the perf session to the next OkHttp call so the EventListener can
+        // record dns/tcp+tls/server/rsp_read into the same breakdown.
+        TJLabsAuthPerfHolder.set(perf)
+
+        val enqueueStart = System.nanoTime()
         postPathPixel.postAuth(input, authServerVersion).enqueue(object :
             Callback<okhttp3.ResponseBody> {
             override fun onFailure(call: Call<okhttp3.ResponseBody>, t: Throwable) {
+                TJLabsAuthPerfHolder.clear()
+                perf.record("network_total", (System.nanoTime() - enqueueStart) / 1_000_000)
                 TJAuthLogger.e("[Network] postAuthToken failed", t)
                 completion(500, AuthOutput())
             }
-            override fun onResponse(call: Call<okhttp3.ResponseBody>, response: Response<okhttp3.ResponseBody>) {
+
+            override fun onResponse(
+                call: Call<okhttp3.ResponseBody>,
+                response: Response<okhttp3.ResponseBody>
+            ) {
+                TJLabsAuthPerfHolder.clear()
+                perf.record("network_total", (System.nanoTime() - enqueueStart) / 1_000_000)
+
                 val statusCode = response.code()
-                TJAuthLogger.d("[Auth] request request : ${call.request()}")
                 TJAuthLogger.d("[Network] postAuthToken response code=$statusCode")
 
+                val parseStart = System.nanoTime()
                 val rawBody = response.body()?.string().orEmpty()
-                TJAuthLogger.d("[Network] postAuthToken raw response=${maskSensitiveResponse(rawBody)}")
+                if (TJAuthLogger.isEnabled()) {
+                    TJAuthLogger.d(
+                        "[Network] postAuthToken raw response=${maskSensitiveResponse(rawBody)}"
+                    )
+                }
 
                 if (statusCode in 200 until 300) {
                     val resultData = parseAuthOutput(rawBody)
+                    perf.record("json_parse", (System.nanoTime() - parseStart) / 1_000_000)
                     completion(statusCode, resultData)
                 } else {
-                    completion(statusCode,  AuthOutput())
+                    perf.record("json_parse", (System.nanoTime() - parseStart) / 1_000_000)
+                    completion(statusCode, AuthOutput())
                 }
             }
         })
