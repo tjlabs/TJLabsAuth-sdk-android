@@ -6,6 +6,8 @@
 -repackageclasses com.tjlabs.tjlabsauth.obf
 -keep class com.tjlabs.tjlabsauth_sdk_android.TJLabsAuthManager { *; }
 -keep class com.tjlabs.tjlabsauth_sdk_android.AuthRegion { *; }
+-keep class com.tjlabs.tjlabsauth_sdk_android.AuthServerEnv { *; }
+-keep class com.tjlabs.tjlabsauth_sdk_android.ServerProvider { *; }
 -keep class com.tjlabs.tjlabsauth_sdk_android.TokenResult { *; }
 -keep class com.tjlabs.tjlabsauth_sdk_android.TokenResult$* { *; }
 
