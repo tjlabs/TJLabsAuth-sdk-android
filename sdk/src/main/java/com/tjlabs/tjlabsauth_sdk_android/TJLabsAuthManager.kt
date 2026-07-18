@@ -121,9 +121,14 @@ object TJLabsAuthManager {
         }
     }
 
-    fun setServerURL(provider: String, region: String = AuthRegion.KOREA.value, serverType: String = "jupiter") {
-        TJAuthLogger.d("[Config] setServerURL provider=$provider region=$region serverType=$serverType")
-        TJLabsAuthNetworkConstants.setServerURL(provider, region, serverType)
+    fun setServerURL(
+        provider: String,
+        region: String = AuthRegion.KOREA.value,
+        serverType: String = "jupiter",
+        env: AuthServerEnv = AuthServerEnv.PROD,
+    ) {
+        TJAuthLogger.d("[Config] setServerURL provider=$provider region=$region serverType=$serverType env=$env")
+        TJLabsAuthNetworkConstants.setServerURL(provider, region, serverType, env)
     }
 
     fun setClientSecret(context: Context, secret: String, persist: Boolean = false) {

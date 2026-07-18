@@ -19,9 +19,14 @@ internal object TJLabsAuthNetworkConstants {
 
     private const val HTTP_PREFIX = "https://"
     private var REGION_PREFIX = "ap-northeast-2."
-    private const val SUFFIX = ".tjlabs.dev"
+    // 환경별 도메인 suffix.
+    //  PROD : 실 운영 도메인 (.tjlabscorp.com)
+    //  DEV  : 내부 테스트 도메인 (.tjlabs.dev)
+    private const val SUFFIX_PROD = ".tjlabscorp.com"
+    private const val SUFFIX_DEV  = ".tjlabs.dev"
+    private var currentSuffix = SUFFIX_PROD    // 기본 PROD
     private var SERVER_TYPE: String = "jupiter"
-    private var USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$SERVER_TYPE$SUFFIX"
+    private var USER_URL = "$HTTP_PREFIX${REGION_PREFIX}user.$SERVER_TYPE$currentSuffix"
 
     // Single shared OkHttpClient across all auth() / refresh() calls.
     // Connection pool, DNS cache, TLS session cache, and dispatcher are reused.
@@ -75,10 +80,19 @@ internal object TJLabsAuthNetworkConstants {
     /** Returns the shared OkHttpClient for low-level use (e.g. prewarm HEAD requests). */
     fun sharedOkHttpClient(): OkHttpClient = sharedClient
 
-    fun setServerURL(provider: String, region: String, serverType: String) {
+    fun setServerURL(
+        provider: String,
+        region: String,
+        serverType: String,
+        env: AuthServerEnv = AuthServerEnv.PROD,
+    ) {
         val normalizedRegion = region.uppercase()
         val normalizedProvider = provider.lowercase()
         val normalizedServerType = serverType.ifBlank { "jupiter" }.lowercase()
+        currentSuffix = when (env) {
+            AuthServerEnv.PROD -> SUFFIX_PROD
+            AuthServerEnv.DEV_TESTING_ONLY -> SUFFIX_DEV
+        }
 
         when (normalizedRegion) {
             AuthRegion.KOREA.value -> {
@@ -110,7 +124,7 @@ internal object TJLabsAuthNetworkConstants {
         }
 
         SERVER_TYPE = normalizedServerType
-        val newUrl = "$HTTP_PREFIX${REGION_PREFIX}user.$normalizedServerType$SUFFIX"
+        val newUrl = "$HTTP_PREFIX${REGION_PREFIX}user.$normalizedServerType$currentSuffix"
         if (newUrl != USER_URL) {
             USER_URL = newUrl
             // Force Retrofit rebuild on next call so the new baseUrl is picked up.
@@ -120,7 +134,7 @@ internal object TJLabsAuthNetworkConstants {
         }
         TJAuthLogger.d(
             "[Network] server configured provider=$normalizedProvider region=$normalizedRegion " +
-                "serverType=$normalizedServerType baseUrl=$USER_URL"
+                "serverType=$normalizedServerType env=$env baseUrl=$USER_URL"
         )
     }
 
