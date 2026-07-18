@@ -6,6 +6,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.tjlabs.sdk_sample_app.databinding.ActivityMainBinding
 import com.tjlabs.tjlabsauth_sdk_android.AuthRegion
+import com.tjlabs.tjlabsauth_sdk_android.AuthServerEnv
 import com.tjlabs.tjlabsauth_sdk_android.Sdk
 import com.tjlabs.tjlabsauth_sdk_android.ServerProvider
 import com.tjlabs.tjlabsauth_sdk_android.TJAuthLogger
@@ -18,10 +19,21 @@ class MainActivity : AppCompatActivity() {
         val bind = ActivityMainBinding.inflate(layoutInflater)
         setContentView(bind.root)
 
+        fun currentEnv(): AuthServerEnv =
+            if (bind.radioDev.isChecked) AuthServerEnv.DEV_TESTING_ONLY else AuthServerEnv.PROD
+
+        fun refreshEnvLabel() {
+            val env = currentEnv()
+            val suffix = if (env == AuthServerEnv.PROD) ".tjlabscorp.com" else ".tjlabs.dev"
+            bind.textCurrentEnv.text = "Selected env : $env  (suffix : $suffix)"
+        }
+        refreshEnvLabel()
+        bind.radioGroupEnv.setOnCheckedChangeListener { _, _ -> refreshEnvLabel() }
+
         bind.btnReadResult.setOnClickListener {
             bind.textViewResult.text = buildCurrentResultText(
                 status = "Cached auth state",
-                detail = "Read current values from TJLabsAuthManager."
+                detail = "Read current values from TJLabsAuthManager. Env selection: ${currentEnv()}"
             )
         }
 
@@ -29,8 +41,13 @@ class MainActivity : AppCompatActivity() {
             val accessKey = BuildConfig.AUTH_ACCESS_KEY.ifBlank { bind.editTextText.text.toString() }
             val secretAccessKey = BuildConfig.AUTH_SECRET_ACCESS_KEY.ifBlank { bind.editTextTextPassword.text.toString() }
             val clientSecret = BuildConfig.AUTH_CLIENT_SECRET
+            val env = currentEnv()
 
-            TJLabsAuthManager.setServerURL(provider = ServerProvider.GCP.value, region = AuthRegion.KOREA.value)
+            TJLabsAuthManager.setServerURL(
+                provider = ServerProvider.GCP.value,
+                region = AuthRegion.KOREA.value,
+                env = env,
+            )
 
             if (accessKey.isBlank() || secretAccessKey.isBlank()) {
                 val message = "AUTH_ACCESS_KEY or AUTH_SECRET_ACCESS_KEY is empty."

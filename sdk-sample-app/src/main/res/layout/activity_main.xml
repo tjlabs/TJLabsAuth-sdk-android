@@ -12,15 +12,60 @@
         android:layout_height="wrap_content"
         android:padding="24dp">
 
+        <TextView
+            android:id="@+id/labelEnv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Server Environment"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <RadioGroup
+            android:id="@+id/radioGroupEnv"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/labelEnv">
+
+            <RadioButton
+                android:id="@+id/radioProd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="PROD (실운영)" />
+
+            <RadioButton
+                android:id="@+id/radioDev"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:text="DEV (테스트)" />
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/textCurrentEnv"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textStyle="italic"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/radioGroupEnv" />
+
         <EditText
             android:id="@+id/editTextText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:hint="Access Key"
             android:inputType="text"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toBottomOf="@+id/textCurrentEnv" />
 
         <EditText
             android:id="@+id/editTextTextPassword"
