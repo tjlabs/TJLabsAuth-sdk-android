@@ -12,6 +12,21 @@ enum class ServerProvider(val value: String) {
     GCP("gcp")
 }
 
+/**
+ * Auth SDK 가 붙는 서버 환경.
+ *
+ * - [PROD] : 실 운영 서버 (`.tjlabscorp.com`). 외부 앱 · 실 배포는 반드시 이 값.
+ *   `TJLabsAuthManager.setServerURL(...)` 를 env 인자 없이 호출하면 자동으로 이 값이 사용된다.
+ *
+ * - [DEV_TESTING_ONLY] : 개발 서버 (`.tjlabs.dev`). **TJLabs 내부 개발 · QA 전용.**
+ *   외부 프로덕션 앱에서 사용 금지 — 개발 서버는 SLA 없이 언제든 스키마 변경 · 다운타임이 발생한다.
+ *   사용 시 반드시 명시적으로 이 값을 넘겨야 한다.
+ */
+enum class AuthServerEnv {
+    PROD,
+    DEV_TESTING_ONLY
+}
+
 data class AuthInput(
     val client_secret: String,
     val access_key: String,
