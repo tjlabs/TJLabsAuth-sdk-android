@@ -11,6 +11,14 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 const val TIMEOUT_VALUE_PUT = 5L
+// TCP+TLS handshake 완료까지 허용 시간. Cloud Run 앞단 HTTPS LB 는 항상 warm 이라 실제로는
+// 60-200ms 수준이지만 국제 회선 지연 여유 포함해 30s. connectTimeout 은 콜드-스타트와 무관.
+const val TIMEOUT_CONNECT_SEC = 30L
+// 요청 전송 후 서버 응답 헤더까지의 대기 시간. Cloud Run 콜드-스타트 시 LB accept 이후
+// 인스턴스 스핀업 (3-10s) + 처리시간이 여기 반영됨. 실측: SAUDI me-central2 콜드-스타트
+// 시 5초 초과로 SocketTimeoutException(takeHeaders) 발생 → 30s 로 상향.
+// write 는 auth body 가 작아 기존 [TIMEOUT_VALUE_PUT] 5s 유지.
+const val TIMEOUT_READ_SEC = 30L
 
 internal object TJLabsAuthNetworkConstants {
     private const val USER_JUPITER_TOKEN_SERVER_VERSION = "2026-06-16"
@@ -35,8 +43,8 @@ internal object TJLabsAuthNetworkConstants {
     // asia-northeast3 from a Korean mobile network).
     private val sharedClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .connectTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
-            .readTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
+            .connectTimeout(TIMEOUT_CONNECT_SEC, TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT_READ_SEC, TimeUnit.SECONDS)
             .writeTimeout(TIMEOUT_VALUE_PUT, TimeUnit.SECONDS)
             // Keep idle TLS connections alive long enough to amortize across user actions.
             .connectionPool(ConnectionPool(5, 5, TimeUnit.MINUTES))
